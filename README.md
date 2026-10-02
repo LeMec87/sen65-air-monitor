@@ -1,7 +1,8 @@
 # SEN65 Air Monitor
 
 Independent firmware project for the Aether-compatible ESP32-C3 PCB with a
-Sensirion SEN65 and a Topwin TWE0370MNN30-FNG-A0 e-paper display.
+Sensirion SEN65 and a Topwin TWE0370NQN35-MNG-A0 e-paper display
+(also named TWE0370NQN35-A0 in the supplied specification).
 The firmware renders its interface at 416×240 pixels in landscape orientation.
 
 The firmware is maintained in this repository and does not use the upstream
@@ -44,15 +45,18 @@ Individual display images and a local browser gallery are available in
 
 - ESP32-C3-MINI-1, 4 MB flash
 - Sensirion SEN65 on I²C: SDA GPIO10, SCL GPIO0
-- Topwin TWE0370MNN30-FNG-A0 e-paper display (model reported by the project owner):
+- Topwin TWE0370NQN35-MNG-A0 3.7-inch black-and-white e-paper display:
   MOSI GPIO7, SCK GPIO6, CS GPIO5, DC GPIO4, RST GPIO3, BUSY GPIO1
 - boot button on GPIO9; short presses cycle through overview, particle,
   gas, climate and device-information pages
 
 The currently configured display driver is `GxEPD2_370_GDEY037T03` with
 rotation 1. `GDEY037T03` is the driver identifier, not the installed panel's
-part number. The exact controller and supported refresh timings of the Topwin
-part have not yet been verified against its manufacturer datasheet.
+part number. The supplied Topwin specification confirms 240×416 native pixels
+and a typical image update time of 2.8 seconds at 25°C. It does not identify
+the controller or specify fast partial-refresh timing, so those aspects of
+driver compatibility remain unconfirmed. See the
+[Topwin display specification notes](docs/topwin-display.md) for details.
 
 ## Build
 
