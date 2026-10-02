@@ -93,6 +93,8 @@ this acknowledges acceptance, not completion. Poll `/api/state` for the result.
 Busy or disconnected checks return 409. Unsupported methods return 400 with
 `method_not_allowed` because the pinned ESP32 server supports a limited status set.
 
+![Live dashboard confirming firmware v0.3.2 and a successful GitHub check](updates-dashboard.jpg)
+
 ## Validation of v0.3.2
 
 Compilation and partition size checks, release metadata/checksum tests,
@@ -101,3 +103,11 @@ dashboard fixture tests are performed before publication. Publication alone
 does not install firmware; a physical-board update is a separate step.
 Phone scanning on the physical e-paper panel should also be checked after
 installation because lighting and panel refresh can affect readability.
+
+On 2026-10-02, a physical ESP32-C3 board was upgraded from v0.2.2 to v0.3.1
+using ESPHome OTA, then from v0.3.1 to v0.3.2 through the dashboard's GitHub
+download path. The download completed, passed OTA integrity validation and
+restarted successfully. The installed board reported current/latest v0.3.2,
+completed a manual check without an HTTP error, retained Celsius, delivered
+all eight SEN65 readings and fetched live weather with no reported error.
+The screenshot above is from that board; no private IP or location is shown.
