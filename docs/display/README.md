@@ -4,6 +4,10 @@ Native resolution: 416×240 pixels. Images are produced with the original
 firmware layout functions and the same Adafruit GFX bitmap fonts used by
 the e-paper display, without a separately drawn mockup.
 
+The project's display model is Topwin TWE0370MNN30-FNG-A0, as reported by
+the project owner. These previews show the configured 416×240 landscape
+rendering; they do not establish the panel's controller or refresh specifications.
+
 Open `index.html` locally to view the gallery. This is a static preview;
 it does not connect to the device or change its settings.
 
