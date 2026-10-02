@@ -1,0 +1,9 @@
+.DS_Store
+.venv/
+__pycache__/
+*.pyc
+firmware/.esphome/
+firmware/secrets.yaml
+firmware/components/air_monitor_web_ui/air_monitor_web_ui_html.h
+dist/*.elf
+dist/*.map

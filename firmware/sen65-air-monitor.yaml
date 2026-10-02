@@ -1,0 +1,331 @@
+substitutions:
+  fw_version: "0.1.0"
+
+esphome:
+  name: sen65-air-monitor
+  # PlatformIO rejects project/build paths containing spaces. Keep generated
+  # build state outside the source tree; override with AIR_MONITOR_BUILD_PATH.
+  build_path: !env_var AIR_MONITOR_BUILD_PATH /tmp/sen65-air-monitor-build
+  name_add_mac_suffix: true
+  friendly_name: SEN65 Air Monitor
+  project:
+    name: "local.sen65_air_monitor"
+    version: ${fw_version}
+  includes:
+    - components/air_monitor_epaper/air_monitor_epaper.h
+    - components/air_monitor_epaper/air_monitor_epaper_layout.h
+    - components/air_monitor_epaper/fonts/Inter_Bold9pt7b.h
+    - components/air_monitor_epaper/fonts/Inter_Bold12pt7b.h
+    - components/air_monitor_epaper/fonts/Inter_Bold18pt7b.h
+    - components/air_monitor_epaper/fonts/Inter_Bold_Tabular18pt7b.h
+    - components/air_monitor_epaper/fonts/Inter_Bold_Tabular24pt7b.h
+    - components/air_monitor_epaper/fonts/Inter_ExtraBold_Device_Information_Subset18pt7b.h
+    - components/air_monitor_epaper/fonts/Inter_ExtraBold_Factory_Reset_Subset20pt7b.h
+    - components/air_monitor_epaper/fonts/Satoshi_800_Logo_Subset22pt7b.h
+    - components/air_monitor_epaper/fonts/SG_Caps10.h
+    - components/air_monitor_epaper/fonts/SG_Caps13.h
+    - components/air_monitor_epaper/fonts/SG_Sub13.h
+    - components/air_monitor_epaper/fonts/SG_Head18.h
+    - components/air_monitor_epaper/fonts/SG_Value20.h
+    - components/air_monitor_epaper/fonts/SG_Value26.h
+    - components/air_monitor_epaper/fonts/SG_Boot28.h
+    - components/air_monitor_epaper/fonts/SG_Status36.h
+
+  on_boot:
+    priority: -100 # Run after all sensors/components are initialized
+    then:
+      - delay: 10min # Duration the AP remains active for setup
+      - if:
+          condition:
+            not:
+              wifi.connected:
+          then:
+            - if:
+                condition:
+                  lambda: "return wifi::global_wifi_component->has_sta();"
+                then:
+                  - logger.log: "WiFi credentials saved but not connected. Keeping WiFi active to retry."
+                else:
+                  - logger.log: "No WiFi configured. Disabling WiFi to enter Offline Mode."
+                  - wifi.disable:
+
+  libraries:
+    - Wire
+    - SPI
+  platformio_options:
+    lib_ldf_mode: deep+
+    lib_deps:
+      - zinggjm/GxEPD2@^1.6.4
+      - adafruit/Adafruit GFX Library@^1.12.3
+      - adafruit/Adafruit BusIO@^1.15.0
+      - ricmoo/QRCode@^0.0.1
+
+esp32:
+  board: esp32-c3-devkitm-1
+  variant: esp32c3
+  framework:
+    type: arduino
+  toolchain: platformio
+
+logger:
+  level: INFO
+
+button:
+  - platform: factory_reset
+    name: "Factory Reset"
+    id: air_monitor_factory_reset
+
+select:
+  - platform: template
+    name: "Temperature Unit"
+    id: temp_unit_select
+    options:
+      - "Fahrenheit"
+      - "Celsius"
+    initial_option: "Celsius"
+    optimistic: true
+    restore_value: true
+    icon: "mdi:thermometer"
+
+api:
+  reboot_timeout: 0s
+
+ota:
+  - platform: esphome
+
+http_request:
+  verify_ssl: false # required on Arduino framework for HTTPS
+  buffer_size_rx: 2048 # large enough to handle massive redirect headers if ever needed
+
+wifi:
+  ap:
+    ap_timeout: 1min
+  reboot_timeout: 0s
+  power_save_mode: NONE
+  fast_connect: false
+  on_connect:
+    - delay: 10s
+    - script.execute: update_weather
+
+binary_sensor:
+  - platform: gpio
+    pin:
+      number: 9
+      inverted: true
+      mode: INPUT_PULLUP
+    name: "Boot Button"
+    id: boot_button
+    internal: true
+    on_multi_click:
+      - timing:
+          - ON for 50ms to 1s
+        then:
+          - lambda: |-
+              air_monitor::air_monitor_epaper::on_short_press();
+      - timing:
+          - ON for at least 3s
+        then:
+          - lambda: |-
+              if (air_monitor::air_monitor_epaper::on_long_press()) {
+                id(air_monitor_factory_reset).press();
+              }
+captive_portal:
+improv_serial:
+esp32_improv:
+  authorizer: none
+
+# Web server automatically registers mDNS _http._tcp on port 80
+web_server:
+  port: 80
+  version: 3
+  local: true
+  include_internal: true
+
+external_components:
+  - source:
+      type: local
+      path: components
+    components: [air_monitor_web_ui]
+
+# ─── Buses ─────────────────────────────────────────────────────────────────────
+
+i2c:
+  sda: 10
+  scl: 0
+  scan: true
+  id: bus_a
+
+# ─── Sensors (IDs used by display + web UI) ───────────────────────────────────
+
+sensor:
+  # SEN65 (PM / VOC / NOx / Temp / RH)
+  - platform: sen6x
+    id: sen65_component
+    i2c_id: bus_a
+    address: 0x6B
+    update_interval: 5s
+
+    # PM values
+    pm_1_0:
+      id: pm1_0
+      name: "PM1.0"
+    pm_2_5:
+      id: pm2_5
+      name: "PM2.5"
+    pm_4_0:
+      id: pm4_0
+      name: "PM4.0"
+    pm_10_0:
+      id: pm10_0
+      name: "PM10"
+
+    # Gas Indices
+    voc_index:
+      id: voc_index
+      name: "VOC Index"
+    nox_index:
+      id: nox_index
+      name: "NOx Index"
+
+    # Temperature & Humidity
+    temperature:
+      id: temp
+      name: "Temperature"
+    humidity:
+      id: rh
+      name: "Humidity"
+
+# ── Local web UI component ──────────────────────────────────────────────────────
+air_monitor_web_ui:
+  pm25: pm2_5
+  temp: temp
+  rh: rh
+  pm1: pm1_0
+  pm4: pm4_0
+  pm10: pm10_0
+  voc: voc_index
+  nox: nox_index
+  temp_unit_switch: temp_unit_select
+
+# ─── Weather icon (sun / cloud / rain) next to the humidity ──────────────────
+# Location comes from IP geolocation (ip-api.com, once per boot), the current
+# weather from Open-Meteo (no API key) every 15 minutes.
+
+globals:
+  - id: wx_lat
+    type: float
+    initial_value: "NAN"
+  - id: wx_lon
+    type: float
+    initial_value: "NAN"
+  - id: wx_kind # -1 unknown, 0 sun, 1 cloud, 2 rain, 3 moon
+    type: int
+    initial_value: "-1"
+
+script:
+  - id: update_weather
+    mode: single
+    then:
+      - if:
+          condition:
+            lambda: "return std::isnan(id(wx_lat));"
+          then:
+            - http_request.get:
+                url: "http://ip-api.com/json/?fields=status,city,lat,lon"
+                capture_response: true
+                max_response_buffer_size: 512
+                on_response:
+                  then:
+                    - lambda: |-
+                        json::parse_json(body, [](JsonObject root) -> bool {
+                          if (root["status"] != "success") return false;
+                          id(wx_lat) = root["lat"].as<float>();
+                          id(wx_lon) = root["lon"].as<float>();
+                          ESP_LOGI("weather", "Location: %s (%.2f, %.2f)",
+                                   root["city"].as<const char *>(), id(wx_lat), id(wx_lon));
+                          return true;
+                        });
+      - if:
+          condition:
+            lambda: "return !std::isnan(id(wx_lat));"
+          then:
+            - http_request.get:
+                url: !lambda |-
+                  char url[160];
+                  snprintf(url, sizeof(url),
+                           "https://api.open-meteo.com/v1/forecast?latitude=%.3f&longitude=%.3f&current=weather_code,is_day",
+                           id(wx_lat), id(wx_lon));
+                  return std::string(url);
+                capture_response: true
+                max_response_buffer_size: 1024
+                on_response:
+                  then:
+                    - lambda: |-
+                        json::parse_json(body, [](JsonObject root) -> bool {
+                          JsonVariant code_v = root["current"]["weather_code"];
+                          if (!code_v.is<int>()) return false;
+                          const int code = code_v.as<int>();
+                          // WMO codes: 0-1 clear, drizzle/rain/showers/thunder -> rain, rest -> cloud
+                          const bool rain = (code >= 51 && code <= 67) || (code >= 80 && code <= 82) || code >= 95;
+                          const bool day = root["current"]["is_day"].as<int>() == 1;
+                          id(wx_kind) = code <= 1 ? (day ? 0 : 3) : (rain ? 2 : 1);
+                          static const char *const kNames[] = {"sun", "cloud", "rain", "moon"};
+                          ESP_LOGI("weather", "Weather code %d (%s) -> %s", code, day ? "day" : "night",
+                                   kNames[id(wx_kind)]);
+                          return true;
+                        });
+
+# ─── Time (date/time shown in place of CO2 on the display) ──────────────────
+
+time:
+  - platform: sntp
+    id: sntp_time
+    timezone: "ICT-7" # Asia/Ho_Chi_Minh (UTC+7, no DST)
+    on_time_sync:
+      - logger.log:
+          level: INFO
+          format: "Time synchronized: %s"
+          args: ['id(sntp_time).now().strftime("%d.%m.%Y %H:%M:%S").c_str()']
+
+# ─── Main UI / E-paper render loop ────────────────────────────────────────────
+
+interval:
+  - interval: 15min
+    then:
+      - if:
+          condition:
+            wifi.connected:
+          then:
+            - script.execute: update_weather
+  - interval: 500ms
+    then:
+      - lambda: |-
+          // e.g. "FRI, OCT 2"
+          static const char *const kWeekdays[] = {"SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"};
+          static const char *const kMonths[] = {"JAN", "FEB", "MAR", "APR", "MAY", "JUN",
+                                                "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"};
+          std::string date_text = "--", time_text = "--:--";
+          auto now = id(sntp_time).now();
+          if (now.is_valid()) {
+            char buf[32];
+            snprintf(buf, sizeof(buf), "%s, %s %d", kWeekdays[now.day_of_week - 1],
+                     kMonths[now.month - 1], now.day_of_month);
+            date_text = buf;
+            snprintf(buf, sizeof(buf), "%02d:%02d", now.hour, now.minute);
+            time_text = buf;
+          }
+          air_monitor::air_monitor_epaper::tick_and_draw(
+            NAN,
+            id(temp).state,
+            id(rh).state,
+            id(pm1_0).state,
+            id(pm2_5).state,
+            id(pm4_0).state,
+            id(pm10_0).state,
+            id(voc_index).state,
+            id(nox_index).state,
+            id(temp_unit_select).current_option() != "Celsius",
+            date_text,
+            time_text,
+            id(wx_kind)
+          );
