@@ -1,7 +1,8 @@
 # Firmware updates and recovery
 
-Dashboard updates are supported from **v0.3.1**. Boards running v0.3.0 or older
-have no GitHub updater: install v0.3.1 or newer once via ESPHome OTA or USB.
+Dashboard updates are supported from **v0.3.1**, with corrected request statuses
+in **v0.3.2**. Boards running v0.3.0 or older have no GitHub updater: install
+v0.3.2 or newer once via ESPHome OTA or USB.
 Uploading a release to GitHub does not upgrade a board by itself.
 
 ## Check and install
@@ -34,6 +35,11 @@ version and URL guards apply to the local dashboard API.
   may instead show an unknown version or a check that never finds an update.
 - **Update error / timeout:** verify internet access, then check again.
   Invalid metadata or failed manifest requests disable installation.
+- **v0.3.1 rejects the check despite fetching a version:** that release returns
+  an incorrect HTTP error after accepting a queued check or install. Wait for
+  the next dashboard poll; when v0.3.2 is offered, install it. An installation
+  may briefly report an error before progress appears. ESPHome OTA is also
+  available to skip this old response-status issue.
 - **Up to date:** no numerically newer release was found; equal or older
   manifest versions cannot be installed from the dashboard.
 - **Page disconnects during installation:** wait for the board to restart,
@@ -55,7 +61,7 @@ recovery uses the release's `factory` image at address `0x0` (not its OTA image)
 
 ```bash
 .venv/bin/esptool --chip esp32c3 --port /dev/cu.usbmodemXXXX \
-  write-flash 0x0 dist/sen65-air-monitor-v0.3.1-factory.bin
+  write-flash 0x0 dist/sen65-air-monitor-v0.3.2-factory.bin
 ```
 
 If an erase is necessary for recovery, use the erase-flash command in the
@@ -82,7 +88,12 @@ Packaging refuses to overwrite a previously published version with different
 binary contents. The manifest always points at a versioned OTA filename, not
 a mutable generic firmware file. No upstream Aether service is used.
 
-## Validation of v0.3.1
+Queued successful check/install requests return HTTP 200 with `{"ok":true}`;
+this acknowledges acceptance, not completion. Poll `/api/state` for the result.
+Busy or disconnected checks return 409. Unsupported methods return 400 with
+`method_not_allowed` because the pinned ESP32 server supports a limited status set.
+
+## Validation of v0.3.2
 
 Compilation and partition size checks, release metadata/checksum tests,
 version/URL validation tests, native display rendering and QR decoding, and

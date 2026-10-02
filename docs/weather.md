@@ -73,12 +73,16 @@ with location data from [GeoNames](https://www.geonames.org/).
   `mode=auto`, or `mode=manual` with `name`, `latitude`, and `longitude`.
   The response is successful only after settings have been persisted.
 - `POST /api/weather/refresh` queues an extra refresh; repeated requests
-  inside 30 seconds or during a running request receive HTTP 429.
+  inside 30 seconds or during a running request receive HTTP 409 (v0.3.2+).
+  Accepted refresh requests return HTTP 200 with `{"ok":true}`; poll for completion.
 
 Names must contain visible text, be less than 128 UTF-8 bytes, and contain no
 control characters. Coordinates must be finite and within latitude ±90° and
 longitude ±180°. Invalid settings return HTTP 400 without changing the location.
-Unsupported methods return HTTP 405; persistence failure returns HTTP 500.
+Unsupported methods return HTTP 400 with `method_not_allowed` (v0.3.2+);
+persistence failure returns HTTP 500. Supported statuses are constrained by
+the pinned ESP32 web server; v0.3.0–v0.3.1 used unsupported codes for some
+requests and incorrectly returned HTTP 500 after accepting a weather refresh.
 
 Example requests (replace the example hostname with your board's hostname):
 

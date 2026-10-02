@@ -124,7 +124,7 @@
       if (!updateConfigured) {
         fwBadgeEl.textContent = 'Initial update required';
         fwBadgeEl.className = 'fw-badge fw-badge--warn';
-        fwStatusTextEl.textContent = 'This firmware has no GitHub updater. Install v0.3.1 or newer once via ESPHome/USB to enable dashboard updates.';
+        fwStatusTextEl.textContent = 'This firmware has no GitHub updater. Install v0.3.2 or newer once via ESPHome/USB to enable dashboard updates.';
         fwUpdateBtn.disabled = true;
         fwUpdateBtn.textContent = 'Update firmware';
         return;

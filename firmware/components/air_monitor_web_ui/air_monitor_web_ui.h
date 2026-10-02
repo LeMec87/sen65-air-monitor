@@ -158,13 +158,14 @@ namespace air_monitor
       else if (url == "/api/weather/refresh")
       {
         if (request->method() != HTTP_POST) {
-          request->send(405, "application/json", "{\"error\":\"method_not_allowed\"}");
+          request->send(400, "application/json", "{\"error\":\"method_not_allowed\"}");
         } else if (weather_fetching_ || (weather_refresh_requested_ &&
                    esphome::millis() - weather_refresh_requested_ms_ < 30000)) {
-          request->send(429, "application/json", "{\"error\":\"Please wait before refreshing again.\"}");
+          request->send(409, "application/json", "{\"error\":\"Please wait before refreshing again.\"}");
         } else {
           request_weather_refresh_();
-          request->send(202, "application/json", "{\"ok\":true}");
+          // ESPHome's ESP32 HTTP status mapper does not support 202.
+          request->send(200, "application/json", "{\"ok\":true}");
         }
       }
       else
@@ -233,7 +234,7 @@ namespace air_monitor
         return;
       }
       if (request->method() != HTTP_POST) {
-        request->send(405, "application/json", "{\"error\":\"method_not_allowed\"}");
+        request->send(400, "application/json", "{\"error\":\"method_not_allowed\"}");
         return;
       }
       if (!request->hasParam("mode")) {
@@ -381,7 +382,7 @@ namespace air_monitor
     {
       if (request->method() != HTTP_POST)
       {
-        request->send(405, "application/json",
+        request->send(400, "application/json",
                       "{\"ok\":false,\"error\":\"method_not_allowed\"}");
         return;
       }
@@ -409,14 +410,14 @@ namespace air_monitor
       ESP_LOGI(TAG, "Starting GitHub firmware update via web UI");
       // false = do not force if it thinks there is no update; UI already checks versions
       fw_update_->perform(false);
-      request->send(202, "application/json", "{\"ok\":true}");
+      request->send(200, "application/json", "{\"ok\":true}");
     }
 
     void handle_check_update_(AsyncWebServerRequest *request)
     {
       if (request->method() != HTTP_POST)
       {
-        request->send(405, "application/json",
+        request->send(400, "application/json",
                       "{\"ok\":false,\"error\":\"method_not_allowed\"}");
         return;
       }
@@ -429,7 +430,7 @@ namespace air_monitor
       }
 
       if (!esphome::network::is_connected()) {
-        request->send(503, "application/json", "{\"ok\":false,\"error\":\"Wi-Fi is not connected.\"}");
+        request->send(409, "application/json", "{\"ok\":false,\"error\":\"Wi-Fi is not connected.\"}");
         return;
       }
       if (fw_checking_ || fw_update_->state == esphome::update::UPDATE_STATE_INSTALLING) {
@@ -445,14 +446,14 @@ namespace air_monitor
       {
         defer("firmware_check", [this]() { on_check_update_(); });
       }
-      request->send(202, "application/json", "{\"ok\":true}");
+      request->send(200, "application/json", "{\"ok\":true}");
     }
 
     void handle_temp_unit_(AsyncWebServerRequest *request)
     {
       if (request->method() != HTTP_POST)
       {
-        request->send(405, "application/json",
+        request->send(400, "application/json",
                       "{\"ok\":false,\"error\":\"method_not_allowed\"}");
         return;
       }

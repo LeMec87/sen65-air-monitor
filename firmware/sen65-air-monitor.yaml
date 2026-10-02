@@ -1,5 +1,5 @@
 substitutions:
-  fw_version: "0.3.1"
+  fw_version: "0.3.2"
 
 esphome:
   name: sen65-air-monitor

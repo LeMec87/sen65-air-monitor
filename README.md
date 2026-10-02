@@ -22,7 +22,7 @@ OTA remain available for initial installation and recovery.
 4. In the dashboard, choose Celsius/Fahrenheit, save a weather city, or use
    **Firmware & Updates** to check for a newer release.
 
-Boards running **v0.3.0 or older need one initial installation of v0.3.1 or
+Boards running **v0.3.0 or older need one initial installation of v0.3.2 or
 newer via ESPHome OTA or USB** before dashboard updates can work. Publishing
 new files on GitHub never installs them automatically. See the
 [update and recovery guide](docs/updates.md).

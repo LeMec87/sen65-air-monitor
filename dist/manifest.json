@@ -1,12 +1,12 @@
 {
   "name": "SEN65 Air Monitor",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "builds": [
     {
       "chipFamily": "ESP32-C3",
       "ota": {
-        "path": "https://raw.githubusercontent.com/LeMec87/sen65-air-monitor/main/dist/sen65-air-monitor-v0.3.1-ota.bin",
-        "md5": "386a7382e8230ea6547798074c3fe9c7",
+        "path": "https://raw.githubusercontent.com/LeMec87/sen65-air-monitor/main/dist/sen65-air-monitor-v0.3.2-ota.bin",
+        "md5": "bcec932a18b65eb15dae4a9d54d25183",
         "release_url": "https://github.com/LeMec87/sen65-air-monitor/blob/main/CHANGELOG.md",
         "summary": "See the release notes before installing. Installation restarts the board and clears RAM-only graph history."
       }

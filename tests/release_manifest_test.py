@@ -2,6 +2,7 @@
 import hashlib
 import importlib.util
 import json
+import re
 from pathlib import Path
 import tempfile
 import unittest
@@ -13,6 +14,12 @@ spec.loader.exec_module(release)
 
 
 class ReleaseTests(unittest.TestCase):
+    def test_esp32_http_response_statuses(self):
+        source = (ROOT / "firmware/components/air_monitor_web_ui/air_monitor_web_ui.h").read_text()
+        codes = {int(code) for code in re.findall(r'request->send\((\d+)', source)}
+        # ESPHome 2026.8.2 web_server_idf::init_response_ maps other codes to 500.
+        self.assertLessEqual(codes, {200, 204, 400, 401, 404, 409, 422, 500})
+
     def test_manifest(self):
         manifest = json.loads((ROOT / "dist/manifest.json").read_text())
         version = release.version_from_config(ROOT)

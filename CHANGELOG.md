@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.2 - 2026-10-02
+
+- fix manual update checks, installation acknowledgements and weather refresh
+  returning HTTP 500 despite accepting the action: ESPHome 2026.8.2's ESP32
+  web-server status mapper does not support HTTP 202; queued actions now return 200
+- use supported 400/409 statuses for rejected methods, busy requests and
+  disconnected update checks, retaining descriptive JSON errors
+- add a regression check for unsupported custom HTTP statuses
+
 ## 0.3.1 - 2026-10-02
 
 - enabled this project's GitHub firmware manifest and dashboard check/install controls
