@@ -18,8 +18,11 @@ it does not connect to the device or change its settings.
 
 The overview is a capture from a running device. The history pages use
 synthetic values to show a complete 24-hour curve. Their geometry and fonts
-come directly from the firmware. The device-information preview uses example
-local addresses. The startup GIF shows the four animation frames at the
+come directly from the firmware. In the public device-information preview,
+the IP address is masked, the hostname has no device-specific suffix, and
+the dashboard QR code uses an example hostname instead of the device's IP.
+The device itself still displays its real connection details.
+The startup GIF shows the four animation frames at the
 configured 900 ms interval; actual hardware refresh duration can vary.
 
 ![All display pages](display-pages.png)
