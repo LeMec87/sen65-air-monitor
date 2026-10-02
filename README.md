@@ -14,6 +14,7 @@ ESPHome OTA connection.
 - date, local time and current weather icon
 - automatic city-level location via IP and weather via Open-Meteo
 - day/night icons including sun, cloud, rain and moon
+- 24-hour charts for particles, gases and climate (5-minute samples)
 - local web dashboard and `/api/state`
 - exact display capture at `/screen.pbm`
 - ESPHome/Home Assistant API
@@ -24,7 +25,8 @@ ESPHome OTA connection.
 - ESP32-C3-MINI-1, 4 MB flash
 - Sensirion SEN65 on I²C: SDA GPIO10, SCL GPIO0
 - GDEY037T03 e-paper display: MOSI 7, SCK 6, CS 5, DC 4, RST 3, BUSY 1
-- boot button on GPIO9
+- boot button on GPIO9; short presses cycle through overview, particle,
+  gas, climate and device-information pages
 
 ## Build
 
@@ -44,9 +46,12 @@ The build produces:
 
 Set `AIR_MONITOR_BUILD_PATH` to use a different build directory.
 
-Verified v0.1.0 binaries are also stored in `dist/`, together with SHA-256
+Verified release binaries are also stored in `dist/`, together with SHA-256
 checksums. Use the `factory` image at address `0x0` for a clean installation;
 use the `ota` image only for an existing compatible installation.
+
+The chart history is kept in RAM to avoid unnecessary flash wear. It starts
+again after a reboot and reaches the full 24-hour window after 288 samples.
 
 ## Install
 

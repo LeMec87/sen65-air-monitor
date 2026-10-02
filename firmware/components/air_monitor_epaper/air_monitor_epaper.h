@@ -56,6 +56,9 @@ namespace air_monitor
     {
       MODE_BOOT,
       MODE_NORMAL,
+      MODE_PARTICLES,
+      MODE_GASES,
+      MODE_CLIMATE,
       MODE_INFO,
       MODE_RESET
     };
@@ -84,8 +87,28 @@ namespace air_monitor
     static std::string g_date_text = "--.--.----", g_time_text = "--:--";
     static int g_weather = -1;  // -1 unknown, 0 sun, 1 cloud, 2 rain, 3 moon
 
+    // --- 24-hour history (5-minute samples, held in RAM) ---
+    enum HistoryMetric
+    {
+      HISTORY_PM1,
+      HISTORY_PM25,
+      HISTORY_PM4,
+      HISTORY_PM10,
+      HISTORY_VOC,
+      HISTORY_NOX,
+      HISTORY_TEMP,
+      HISTORY_RH,
+      HISTORY_METRIC_COUNT
+    };
+    static constexpr size_t HISTORY_POINTS = 288;
+    static float g_history[HISTORY_METRIC_COUNT][HISTORY_POINTS] = {};
+    static uint16_t g_history_head = 0;
+    static uint16_t g_history_count = 0;
+    static unsigned long g_last_history_sample_ms = 0;
+
     // --- Config ---
     static constexpr unsigned long NORMAL_REFRESH_MS = 5000;
+    static constexpr unsigned long HISTORY_SAMPLE_MS = 5UL * 60UL * 1000UL;
     static constexpr unsigned long BOOT_FRAME_MS = 500;
     static constexpr uint8_t BOOT_SLASH_FRAME_COUNT = 4;
     static constexpr unsigned long BOOT_TIMEOUT_MS = 75000;
@@ -198,6 +221,114 @@ namespace air_monitor
                                             &SG_Boot28, "AIR MONITOR");
     }
 
+    inline float history_value(HistoryMetric metric, uint16_t logical_index)
+    {
+      const size_t oldest = (g_history_head + HISTORY_POINTS - g_history_count) % HISTORY_POINTS;
+      float value = g_history[metric][(oldest + logical_index) % HISTORY_POINTS];
+      if (metric == HISTORY_TEMP && g_use_f)
+        value = value * 9.0f / 5.0f + 32.0f;
+      return value;
+    }
+
+    inline void sample_history(unsigned long now)
+    {
+      if (!all_metrics_ready())
+        return;
+      if (g_history_count > 0 && now - g_last_history_sample_ms < HISTORY_SAMPLE_MS)
+        return;
+
+      const float values[HISTORY_METRIC_COUNT] = {
+          g_pm1, g_pm25, g_pm4, g_pm10, g_voc, g_nox, g_temp, g_rh};
+      for (size_t metric = 0; metric < HISTORY_METRIC_COUNT; ++metric)
+        g_history[metric][g_history_head] = values[metric];
+
+      g_history_head = (g_history_head + 1) % HISTORY_POINTS;
+      if (g_history_count < HISTORY_POINTS)
+        ++g_history_count;
+      g_last_history_sample_ms = now;
+    }
+
+    inline void draw_history_header(const char *title, const char *page)
+    {
+      display.fillScreen(GxEPD_WHITE);
+      display.setTextColor(GxEPD_BLACK);
+      air_monitor_epaper_layout::print_left(display, 16, 29, &SG_Head18, title);
+      air_monitor_epaper_layout::print_right(display, display.width() - 16, 27, &SG_Caps13, "LAST 24H");
+      display.drawLine(16, 40, display.width() - 16, 40, GxEPD_BLACK);
+      air_monitor_epaper_layout::print_right(display, display.width() - 16, 236, &SG_Caps10, page);
+    }
+
+    inline void format_history_value(char *buffer, size_t size, float value,
+                                     const char *suffix, bool one_decimal)
+    {
+      if (!std::isfinite(value))
+      {
+        snprintf(buffer, size, "--%s", suffix);
+        return;
+      }
+      snprintf(buffer, size, one_decimal ? "%.1f%s" : "%.0f%s", value, suffix);
+    }
+
+    inline void draw_history_chart(int x, int y, int width, int height,
+                                   const char *label, HistoryMetric metric,
+                                   float current, const char *suffix,
+                                   bool one_decimal)
+    {
+      char value_text[24];
+      format_history_value(value_text, sizeof(value_text), current, suffix, one_decimal);
+      air_monitor_epaper_layout::print_left(display, x, y + 15, &SG_Caps13, label);
+      air_monitor_epaper_layout::print_right(display, x + width, y + 17, &SG_Value20, value_text);
+
+      const int plot_top = y + 25;
+      const int plot_bottom = y + height - 7;
+      const int plot_height = plot_bottom - plot_top;
+      display.drawLine(x, plot_bottom, x + width, plot_bottom, GxEPD_BLACK);
+      for (int dash_x = x; dash_x < x + width; dash_x += 12)
+        display.drawLine(dash_x, plot_top + plot_height / 2,
+                         (dash_x + 5 < x + width ? dash_x + 5 : x + width),
+                         plot_top + plot_height / 2, GxEPD_BLACK);
+
+      if (g_history_count == 0)
+      {
+        air_monitor_epaper_layout::print_centered(display, x + width / 2, plot_top + plot_height / 2 + 4,
+                                                   &SG_Caps10, "WAITING FOR DATA");
+        return;
+      }
+
+      float min_value = history_value(metric, 0);
+      float max_value = min_value;
+      for (uint16_t i = 1; i < g_history_count; ++i)
+      {
+        const float value = history_value(metric, i);
+        if (value < min_value) min_value = value;
+        if (value > max_value) max_value = value;
+      }
+      float range = max_value - min_value;
+      if (range < 0.1f)
+        range = 1.0f;
+      const float padding = range * 0.12f;
+      min_value -= padding;
+      max_value += padding;
+      range = max_value - min_value;
+
+      int previous_x = 0;
+      int previous_y = 0;
+      for (uint16_t i = 0; i < g_history_count; ++i)
+      {
+        const float value = history_value(metric, i);
+        const int px = x + width - static_cast<int>((g_history_count - 1 - i) * width / (HISTORY_POINTS - 1));
+        const int py = plot_bottom - 1 - static_cast<int>((value - min_value) * (plot_height - 2) / range);
+        if (i > 0)
+          display.drawLine(previous_x, previous_y, px, py, GxEPD_BLACK);
+        previous_x = px;
+        previous_y = py;
+      }
+      display.fillCircle(previous_x, previous_y, 2, GxEPD_BLACK);
+
+      if (g_history_count < 2)
+        air_monitor_epaper_layout::print_left(display, x + 4, plot_bottom - 5, &SG_Caps10, "COLLECTING");
+    }
+
     // --- High-Level Renderers ---
     inline void render_boot(uint8_t frame, bool full)
     {
@@ -219,6 +350,71 @@ namespace air_monitor
         air_monitor_epaper_layout::render_status_layout(display, m, g_use_f,
                                                   g_date_text.c_str(), g_time_text.c_str(), g_weather); });
       g_last_normal_render_ms = millis();
+    }
+
+    inline void render_particles(bool full)
+    {
+      render_paged(full, []()
+                   {
+        draw_history_header("PARTICLES", "2 / 5");
+        draw_history_chart(16, 47, 180, 78, "PM1", HISTORY_PM1, g_pm1, "", true);
+        draw_history_chart(220, 47, 180, 78, "PM2.5", HISTORY_PM25, g_pm25, "", true);
+        draw_history_chart(16, 140, 180, 78, "PM4", HISTORY_PM4, g_pm4, "", true);
+        draw_history_chart(220, 140, 180, 78, "PM10", HISTORY_PM10, g_pm10, "", true);
+        display.drawLine(208, 50, 208, 121, GxEPD_BLACK);
+        display.drawLine(208, 144, 208, 215, GxEPD_BLACK);
+        display.drawLine(24, 132, display.width() - 24, 132, GxEPD_BLACK); });
+      g_last_normal_render_ms = millis();
+    }
+
+    inline void render_gases(bool full)
+    {
+      render_paged(full, []()
+                   {
+        draw_history_header("GASES", "3 / 5");
+        draw_history_chart(16, 48, 384, 76, "VOC", HISTORY_VOC, g_voc, "", false);
+        draw_history_chart(16, 141, 384, 76, "NOX", HISTORY_NOX, g_nox, "", false);
+        display.drawLine(24, 132, display.width() - 24, 132, GxEPD_BLACK); });
+      g_last_normal_render_ms = millis();
+    }
+
+    inline void render_climate(bool full)
+    {
+      const float shown_temp = g_use_f ? g_temp * 9.0f / 5.0f + 32.0f : g_temp;
+      render_paged(full, [shown_temp]()
+                   {
+        draw_history_header("CLIMATE", "4 / 5");
+        draw_history_chart(16, 48, 384, 76, "TEMPERATURE", HISTORY_TEMP,
+                           shown_temp, g_use_f ? "F" : "C", true);
+        draw_history_chart(16, 141, 384, 76, "HUMIDITY", HISTORY_RH, g_rh, "%", true);
+        display.drawLine(24, 132, display.width() - 24, 132, GxEPD_BLACK); });
+      g_last_normal_render_ms = millis();
+    }
+
+    inline bool is_history_mode()
+    {
+      return g_display_mode == MODE_PARTICLES ||
+             g_display_mode == MODE_GASES ||
+             g_display_mode == MODE_CLIMATE;
+    }
+
+    inline void render_active_data_page(bool full)
+    {
+      switch (g_display_mode)
+      {
+      case MODE_PARTICLES:
+        render_particles(full);
+        break;
+      case MODE_GASES:
+        render_gases(full);
+        break;
+      case MODE_CLIMATE:
+        render_climate(full);
+        break;
+      default:
+        render_normal(full);
+        break;
+      }
     }
 
     inline bool wifi_connected()
@@ -450,6 +646,15 @@ namespace air_monitor
       case MODE_NORMAL:
         render_normal(full);
         break;
+      case MODE_PARTICLES:
+        render_particles(full);
+        break;
+      case MODE_GASES:
+        render_gases(full);
+        break;
+      case MODE_CLIMATE:
+        render_climate(full);
+        break;
       case MODE_INFO:
         render_info(full);
         break;
@@ -464,7 +669,24 @@ namespace air_monitor
     {
       if (g_display_mode == MODE_BOOT)
         return;
-      g_display_mode = (g_display_mode == MODE_NORMAL) ? MODE_INFO : MODE_NORMAL;
+      switch (g_display_mode)
+      {
+      case MODE_NORMAL:
+        g_display_mode = MODE_PARTICLES;
+        break;
+      case MODE_PARTICLES:
+        g_display_mode = MODE_GASES;
+        break;
+      case MODE_GASES:
+        g_display_mode = MODE_CLIMATE;
+        break;
+      case MODE_CLIMATE:
+        g_display_mode = MODE_INFO;
+        break;
+      default:
+        g_display_mode = MODE_NORMAL;
+        break;
+      }
       redraw(true);
     }
 
@@ -504,6 +726,7 @@ namespace air_monitor
       g_weather = weather;
 
       unsigned long now = millis();
+      sample_history(now);
       if (g_display_mode == MODE_BOOT)
       {
         if (g_boot_start_ms == 0)
@@ -533,12 +756,13 @@ namespace air_monitor
         return;
       }
 
-      if (g_display_mode == MODE_NORMAL && (g_last_normal_render_ms == 0 || now - g_last_normal_render_ms >= NORMAL_REFRESH_MS))
+      if ((g_display_mode == MODE_NORMAL || is_history_mode()) &&
+          (g_last_normal_render_ms == 0 || now - g_last_normal_render_ms >= NORMAL_REFRESH_MS))
       {
         // Prevent e-paper ghosting by running a full refresh every ~24 hours (17280 * 5s)
         static unsigned int normal_refresh_count = 1;
         bool full_refresh = (normal_refresh_count % 17280 == 0);
-        render_normal(full_refresh);
+        render_active_data_page(full_refresh);
         normal_refresh_count++;
         return;
       }
