@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>SEN65 Air Monitor – Displaylayouts</title>
+  <style>
+    body { margin:0; padding:24px; background:#eee; color:#222; font-family:system-ui,sans-serif; }
+    main { max-width:920px; margin:auto; }
+    h1 { font-size:24px; font-weight:600; }
+    p { line-height:1.5; }
+    .gallery { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,416px),1fr)); gap:24px; }
+    figure { margin:0; }
+    figcaption { margin-bottom:8px; }
+    img { display:block; width:100%; max-width:416px; height:auto; image-rendering:pixelated; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>SEN65 Air Monitor – Displaylayouts</h1>
+    <p>Originale Firmware-Darstellung in 416 × 240 Pixeln. Die Übersicht stammt vom Gerät, die Graphen zeigen Beispielverläufe.</p>
+    <div class="gallery">
+      <figure><figcaption>Startanimation</figcaption><img src="boot-animation.gif" width="416" height="240" alt="AIR MONITOR mit vier wechselnden Ladebalken"></figure>
+      <figure><figcaption>Übersicht</figcaption><img src="overview.png" width="416" height="240" alt="Luftstatus, PM2.5, VOC, Wetter und weitere Messwerte"></figure>
+      <figure><figcaption>Partikel</figcaption><img src="particles.png" width="416" height="240" alt="Gemeinsamer 24-Stunden-Graph für PM1, PM2.5, PM4 und PM10"></figure>
+      <figure><figcaption>Gase</figcaption><img src="gases.png" width="416" height="240" alt="Gemeinsamer 24-Stunden-Graph für VOC und NOx"></figure>
+      <figure><figcaption>Klima</figcaption><img src="climate.png" width="416" height="240" alt="Gemeinsamer 24-Stunden-Graph für Temperatur und Luftfeuchtigkeit"></figure>
+      <figure><figcaption>Geräteinformationen</figcaption><img src="info.png" width="416" height="240" alt="Hostname und IP-Adresse auf getrennten Zeilen sowie zwei QR-Codes"></figure>
+    </div>
+  </main>
+</body>
+</html>

@@ -619,15 +619,6 @@ namespace air_monitor
       return "http://" + info_use_address() + "/";
     }
 
-    inline const GFXfont *info_meta_font(const char *left_text, const char *right_text)
-    {
-      const int max_width = display.width() - 32;
-      const int full_width =
-          air_monitor_epaper_layout::text_width(display, &Inter_Bold12pt7b, left_text) +
-          air_monitor_epaper_layout::text_width(display, &Inter_Bold12pt7b, right_text) + 28;
-      return full_width > max_width ? &Inter_Bold9pt7b : &Inter_Bold12pt7b;
-    }
-
     inline void draw_info_header()
     {
       display.fillScreen(GxEPD_WHITE);
@@ -639,11 +630,12 @@ namespace air_monitor
       air_monitor_epaper_layout::draw_divider(display, 154, 261, 47);
     }
 
-    inline void draw_info_meta_row(const char *left_text, const char *right_text)
+    inline void draw_info_meta_row(const char *host_text, const char *ip_text)
     {
-      const GFXfont *meta_font = info_meta_font(left_text, right_text);
-      air_monitor_epaper_layout::print_left(display, 16, 72, meta_font, left_text);
-      air_monitor_epaper_layout::print_right(display, display.width() - 16, 72, meta_font, right_text);
+      // Each address gets the full display width and its own baseline.
+      // Keep a consistent font size above the QR-card brackets at y=96.
+      air_monitor_epaper_layout::print_left(display, 16, 68, &Inter_Bold9pt7b, host_text);
+      air_monitor_epaper_layout::print_left(display, 16, 90, &Inter_Bold9pt7b, ip_text);
     }
 
     inline void draw_info_cards(const char *left_label, const char *left_target,

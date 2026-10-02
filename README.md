@@ -22,6 +22,23 @@ ESPHome OTA connection.
 - ESPHome/Home Assistant API
 - Wi-Fi onboarding through captive portal and Improv Serial/BLE
 
+## Display layouts
+
+These previews use the firmware's original drawing functions and bitmap fonts
+at the native 416×240 resolution. The overview is a device capture; graph
+histories are illustrative sample data, not recorded measurements.
+
+![Display pages](docs/display/display-pages.png)
+
+The device-information page places the hostname and IP address on separate
+lines. The BOOT button cycles through overview, particles, gases, climate
+and device information.
+
+![Startup animation](docs/display/boot-animation.gif)
+
+Individual display images and a local browser gallery are available in
+[docs/display](docs/display/README.md).
+
 ## Hardware
 
 - ESP32-C3-MINI-1, 4 MB flash

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.2 - 2026-10-02
+
+- placed hostname and IP address on separate lines in device information
+- added original firmware-rendered display previews and startup animation
+
 ## 0.2.1 - 2026-10-02
 
 - combined each category into one full-width graph
