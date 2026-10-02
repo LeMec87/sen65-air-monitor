@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.3.1 - 2026-10-02
+
+- enabled this project's GitHub firmware manifest and dashboard check/install controls
+- report check progress and errors; reject unapproved download URLs and dashboard downgrades
+- verify HTTPS server certificates and the OTA image's manifest checksum
+- point the Instructions QR at the public project guide instead of a wrong local hostname
+- give QR codes a proper white quiet zone without a surrounding black border
+- restyle connected and offline Device Information with Space Grotesk,
+  inset dividers, separate address rows and consistently aligned QR blocks
+- document the one-time ESPHome/USB bootstrap needed on v0.3.0 and older boards
+
 ## 0.3.0 - 2026-10-02
 
 - added a Weather dashboard tab with city search and automatic IP-location mode

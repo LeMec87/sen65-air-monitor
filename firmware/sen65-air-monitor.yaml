@@ -1,5 +1,5 @@
 substitutions:
-  fw_version: "0.3.0"
+  fw_version: "0.3.1"
 
 esphome:
   name: sen65-air-monitor
@@ -30,6 +30,7 @@ esphome:
     - components/air_monitor_epaper/fonts/SG_Value26.h
     - components/air_monitor_epaper/fonts/SG_Boot28.h
     - components/air_monitor_epaper/fonts/SG_Status36.h
+    - components/air_monitor_epaper/fonts/SG_Info12.h
 
   on_boot:
     priority: -100 # Run after all sensors/components are initialized
@@ -94,9 +95,18 @@ api:
 
 ota:
   - platform: esphome
+  - platform: http_request
+    id: github_http_ota
+
+update:
+  - platform: http_request
+    name: "Firmware Update"
+    id: github_fw_update
+    source: "https://raw.githubusercontent.com/LeMec87/sen65-air-monitor/main/dist/manifest.json"
+    update_interval: 6h
 
 http_request:
-  verify_ssl: false # required on Arduino framework for HTTPS
+  verify_ssl: true # ESP32 uses ESP-IDF's certificate bundle, including with Arduino
   buffer_size_rx: 2048 # large enough to handle massive redirect headers if ever needed
 
 wifi:
@@ -209,6 +219,7 @@ air_monitor_web_ui:
   voc: voc_index
   nox: nox_index
   temp_unit_switch: temp_unit_select
+  fw_update: github_fw_update
 
 # Weather settings are saved by air_monitor_ui. Automatic mode looks up the
 # IP-based city once per boot; manual mode uses the dashboard's saved city.

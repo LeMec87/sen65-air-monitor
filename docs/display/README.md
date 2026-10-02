@@ -21,6 +21,7 @@ it does not connect to the device or change its settings.
 | Gases | [gases.png](gases.png) |
 | Climate | [climate.png](climate.png) |
 | Device information | [info.png](info.png) |
+| Device information, offline | [info-offline.png](info-offline.png) |
 | Weather symbols | [weather-icons.png](weather-icons.png) |
 
 The overview is a capture from a running device. The history pages use
@@ -29,10 +30,19 @@ come directly from the firmware. In the public device-information preview,
 the IP address is masked, the hostname has no device-specific suffix, and
 the dashboard QR code uses an example hostname instead of the device's IP.
 The device itself still displays its real connection details.
+From v0.3.1, both connected and offline Device Information use Space Grotesk
+with a 16-pixel outer inset, separate metadata rows and inset divider lines.
+The connected QR blocks are centered in equal columns; their white margins
+contain at least four QR modules. **INSTRUCTIONS** opens this project's public
+README. **DASHBOARD** opens the board's current local address and requires the
+same LAN. The offline page instead shows setup Wi-Fi instructions.
+These are native firmware renders, not a separately designed approximation.
 The startup GIF shows the four animation frames at the
 configured 900 ms interval; actual hardware refresh duration can vary.
 
 ![All display pages](display-pages.png)
+
+![Offline device information](info-offline.png)
 
 ## Weather icons (v0.3.0)
 

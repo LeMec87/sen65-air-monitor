@@ -38,6 +38,10 @@
     let updateState = 'unknown';
     let updateProgress = 0.0;
     let hasUpdate = false;
+    let updateConfigured = false;
+    let updateChecking = false;
+    let updateError = '';
+    let updateCheckPending = false;
     let currentTempUnit = 'F';
 
     function formatNumber(v, digits = 1) {
@@ -115,6 +119,32 @@
       fwCurrentEl.textContent = currentFwVersion || '—';
       fwLatestEl.textContent = latestFwVersion || '—';
 
+      fwCheckBtn.textContent = updateChecking || updateCheckPending ? 'Checking…' : 'Check for updates';
+      fwCheckBtn.disabled = !updateConfigured || updateChecking || updateCheckPending || updateState === 'installing';
+      if (!updateConfigured) {
+        fwBadgeEl.textContent = 'Initial update required';
+        fwBadgeEl.className = 'fw-badge fw-badge--warn';
+        fwStatusTextEl.textContent = 'This firmware has no GitHub updater. Install v0.3.1 or newer once via ESPHome/USB to enable dashboard updates.';
+        fwUpdateBtn.disabled = true;
+        fwUpdateBtn.textContent = 'Update firmware';
+        return;
+      }
+      if (updateChecking || updateCheckPending) {
+        fwBadgeEl.textContent = 'Checking GitHub';
+        fwBadgeEl.className = 'fw-badge fw-badge--unknown';
+        fwStatusTextEl.textContent = 'Fetching the latest firmware manifest from GitHub…';
+        fwUpdateBtn.disabled = true;
+        return;
+      }
+      if (updateError) {
+        fwBadgeEl.textContent = 'Update error';
+        fwBadgeEl.className = 'fw-badge fw-badge--warn';
+        fwStatusTextEl.textContent = updateError;
+        fwUpdateBtn.disabled = true;
+        fwUpdateBtn.textContent = 'Update firmware';
+        return;
+      }
+
       if (updateState === 'installing') {
         fwBadgeEl.textContent = 'Installing update';
         fwBadgeEl.className = 'fw-badge fw-badge--warn';
@@ -131,7 +161,7 @@
       if (!latestFwVersion) {
         fwBadgeEl.textContent = 'Status unknown';
         fwBadgeEl.className = 'fw-badge fw-badge--unknown';
-        fwStatusTextEl.textContent = 'Awaiting update status from the device...';
+        fwStatusTextEl.textContent = 'No successful GitHub check yet. Press Check for updates.';
         fwUpdateBtn.disabled = true;
         fwUpdateBtn.textContent = 'Update firmware';
         return;
@@ -158,6 +188,9 @@
       updateState = data.update_state || 'unknown';
       updateProgress = data.update_progress || 0.0;
       hasUpdate = data.has_update || false;
+      updateConfigured = data.update_configured === true;
+      updateChecking = data.update_checking === true;
+      updateError = data.update_error || '';
       renderFirmwareStatus();
     }
 
@@ -168,11 +201,12 @@
 
       try {
         const res = await fetch('/api/perform_update', { method: 'POST' });
-        if (!res.ok) throw new Error('bad status');
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error || 'The device rejected the update.');
         // If the device reboots quickly, this page will drop connection anyway.
         fwStatusTextEl.textContent = 'Update started. This page may become unreachable while the device reboots.';
       } catch (e) {
-        fwStatusTextEl.textContent = 'Failed to start update. Check connection and try again.';
+        fwStatusTextEl.textContent = e.message || 'Failed to start update. Check connection and try again.';
         // Re-enable after a short delay
         setTimeout(() => {
           renderFirmwareStatus();
@@ -182,24 +216,22 @@
 
     fwCheckBtn.addEventListener('click', async () => {
       if (fwCheckBtn.disabled) return;
-      const originalText = fwCheckBtn.textContent;
-      fwCheckBtn.disabled = true;
-      fwCheckBtn.textContent = 'Checking...';
-      fwStatusTextEl.textContent = 'Checking for updates...';
+      updateCheckPending = true;
+      updateError = '';
+      renderFirmwareStatus();
 
       try {
         const res = await fetch('/api/check_update', { method: 'POST' });
-        if (!res.ok) throw new Error('bad status');
-        fwStatusTextEl.textContent = 'Check initiated.';
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error || 'The device rejected the update check.');
+        updateChecking = true;
       } catch (e) {
-        fwStatusTextEl.textContent = 'Failed to check for updates. Check connection and try again.';
+        updateChecking = false;
+        updateError = e.message || 'Failed to check for updates. Check connection and try again.';
       }
-
-      setTimeout(() => {
-        fwCheckBtn.textContent = originalText;
-        fwCheckBtn.disabled = false;
-        renderFirmwareStatus();
-      }, 3000);
+      updateCheckPending = false;
+      renderFirmwareStatus();
+      setTimeout(pollState, 1000);
     });
 
     async function pollState() {

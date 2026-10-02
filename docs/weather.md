@@ -100,9 +100,11 @@ to a trusted LAN.
 
 The browser needs internet access for city search. The board needs internet
 access for weather updates. Automatic location currently uses `ip-api.com`
-over HTTP. Weather requests use the existing Arduino HTTPS configuration
-without certificate verification. Use the dashboard only on a trusted local
-network; do not expose it directly to the internet.
+over HTTP, so automatic location is approximate and is not authenticated.
+From v0.3.1, HTTPS weather requests verify server certificates using ESP32's
+ESP-IDF certificate bundle (also with the Arduino framework). v0.3.0 did not
+verify these certificates. Use the dashboard only on a trusted local network;
+do not expose it directly to the internet.
 
 For v0.3.0, the firmware compilation, weather-code/coordinate/settings unit
 tests, seven-icon render/boundary checks, and browser city-search/save/restore

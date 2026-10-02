@@ -23,6 +23,7 @@ FONTS = [
     ("SG_Value26", 26, 500, DIGITS, True),                                 # PM2.5 / VOC
     ("SG_Boot28", 28, 700, "AIR MONT", False),                            # boot wordmark
     ("SG_Status36", 36, 700, "GoodModeratePr", False),                     # status word
+    ("SG_Info12", 12, 500, string.printable[:95], False),                  # readable ASCII addresses and setup text
 ]
 
 

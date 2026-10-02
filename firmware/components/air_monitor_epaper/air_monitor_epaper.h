@@ -31,6 +31,7 @@
 #include "SG_Value26.h"
 #include "SG_Boot28.h"
 #include "SG_Status36.h"
+#include "SG_Info12.h"
 #include "air_monitor_epaper_layout.h"
 
 namespace air_monitor
@@ -114,7 +115,7 @@ namespace air_monitor
     static constexpr unsigned long BOOT_FRAME_MS = 900;
     static constexpr uint8_t BOOT_SLASH_FRAME_COUNT = 4;
     static constexpr unsigned long BOOT_TIMEOUT_MS = 75000;
-    static constexpr const char *INFO_INSTRUCTIONS_URL = "http://sen65-air-monitor.local/";
+    static constexpr const char *INFO_INSTRUCTIONS_URL = "https://github.com/LeMec87/sen65-air-monitor";
 
     inline void draw_info_qr_card(int x, int y, const char *target);
     inline void draw_info_qr_card(int x, int y, const char *target,
@@ -624,35 +625,33 @@ namespace air_monitor
       display.fillScreen(GxEPD_WHITE);
       display.setTextColor(GxEPD_BLACK);
 
-      air_monitor_epaper_layout::print_centered(display, display.width() / 2, 36,
-                                           &Inter_ExtraBold_Device_Information_Subset18pt7b,
-                                           "Device Information");
-      air_monitor_epaper_layout::draw_divider(display, 154, 261, 47);
+      air_monitor_epaper_layout::print_left(display, 16, 28, &SG_Head18, "DEVICE INFORMATION");
+      air_monitor_epaper_layout::draw_divider(display, 16, display.width() - 17, 41);
     }
 
     inline void draw_info_meta_row(const char *host_text, const char *ip_text)
     {
-      // Each address gets the full display width and its own baseline.
-      // Keep a consistent font size above the QR-card brackets at y=96.
-      air_monitor_epaper_layout::print_left(display, 16, 68, &Inter_Bold9pt7b, host_text);
-      air_monitor_epaper_layout::print_left(display, 16, 90, &Inter_Bold9pt7b, ip_text);
+      air_monitor_epaper_layout::print_left(display, 16, 63, &SG_Caps10, "HOST");
+      air_monitor_epaper_layout::print_left(display, 16, 84, &SG_Caps10, "IP");
+      air_monitor_epaper_layout::print_left(display, 60, 63, &SG_Info12, host_text);
+      air_monitor_epaper_layout::print_left(display, 60, 84, &SG_Info12, ip_text);
+      air_monitor_epaper_layout::draw_divider(display, 16, display.width() - 17, 94);
     }
 
     inline void draw_info_cards(const char *left_label, const char *left_target,
                                 const char *right_label, const char *right_target)
     {
-      static constexpr int qr_box_size = 99;
-      static constexpr int qr_y = 134;
-      static constexpr int left_qr_x = 43;
-      const int right_qr_x = display.width() - 38 - qr_box_size;
+      static constexpr int qr_box_size = 111; // 29 modules + four-module quiet zone, at 3 px
+      static constexpr int qr_y = 120;
+      static constexpr int left_qr_x = 49;
+      const int right_qr_x = display.width() - 49 - qr_box_size;
       const int left_center_x = left_qr_x + qr_box_size / 2;
       const int right_center_x = right_qr_x + qr_box_size / 2;
 
-      draw_connected_info_bracket(true);
-      draw_connected_info_bracket(false);
+      display.drawLine(display.width() / 2, 106, display.width() / 2, 224, GxEPD_BLACK);
 
-      air_monitor_epaper_layout::print_centered(display, left_center_x, 123, &Inter_Bold9pt7b, left_label);
-      air_monitor_epaper_layout::print_centered(display, right_center_x, 123, &Inter_Bold9pt7b, right_label);
+      air_monitor_epaper_layout::print_centered(display, left_center_x, 111, &SG_Caps13, left_label);
+      air_monitor_epaper_layout::print_centered(display, right_center_x, 111, &SG_Caps13, right_label);
 
       draw_info_qr_card(left_qr_x, qr_y, left_target);
       draw_info_qr_card(right_qr_x, qr_y, right_target);
@@ -660,21 +659,31 @@ namespace air_monitor
 
     inline void draw_info_qr_card(int x, int y, const char *target)
     {
-      draw_info_qr_card(x, y, target, 3, 6);
+      draw_info_qr_card(x, y, target, 3, 12);
     }
 
     inline void draw_info_qr_card(int x, int y, const char *target,
                                   int scale, int padding)
     {
-      static constexpr uint8_t QR_VERSION = 3;
+      static constexpr uint8_t QR_VERSION = 3, QR_MAX_VERSION = 6;
       QRCode qr;
-      uint8_t data[qrcode_getBufferSize(QR_VERSION)];
-      qrcode_initText(&qr, data, QR_VERSION, 0, target);
-
-      const int box_size = padding * 2 + qr.size * scale;
+      uint8_t data[((4 * QR_MAX_VERSION + 17) * (4 * QR_MAX_VERSION + 17) + 7) / 8];
+      bool encoded = false;
+      for (uint8_t version = QR_VERSION; version <= QR_MAX_VERSION; ++version) {
+        if (qrcode_initText(&qr, data, version, ECC_LOW, target) == 0) { encoded = true; break; }
+      }
+      const int box_size = padding * 2 + 29 * scale;
 
       display.fillRect(x, y, box_size, box_size, GxEPD_WHITE);
-      display.drawRect(x, y, box_size, box_size, GxEPD_BLACK);
+      if (!encoded) {
+        air_monitor_epaper_layout::print_centered(display, x + box_size / 2, y + box_size / 2,
+                                                  &SG_Caps10, "QR ERROR");
+        return;
+      }
+      // Keep a clear four-module quiet zone. Longer URLs use a larger QR
+      // version with smaller pixels, centered in the same aligned box.
+      const int module_scale = std::min(scale, box_size / (qr.size + 8));
+      const int margin = (box_size - qr.size * module_scale) / 2;
 
       for (uint8_t row = 0; row < qr.size; ++row)
       {
@@ -682,9 +691,9 @@ namespace air_monitor
         {
           if (!qrcode_getModule(&qr, col, row))
             continue;
-          display.fillRect(x + padding + col * scale,
-                           y + padding + row * scale,
-                           scale, scale, GxEPD_BLACK);
+          display.fillRect(x + margin + col * module_scale,
+                           y + margin + row * module_scale,
+                           module_scale, module_scale, GxEPD_BLACK);
         }
       }
     }
@@ -716,26 +725,32 @@ namespace air_monitor
     {
       const std::string hostname = info_hostname();
       const std::string ip = info_ip_string();
-      const std::string host_text = "Host: " + hostname;
-      const std::string ip_text = "IP: " + (ip.empty() ? std::string("--") : ip);
+      const std::string host_text = hostname;
+      const std::string ip_text = ip.empty() ? std::string("--") : ip;
       const std::string dashboard_target = info_dashboard_target();
 
       draw_info_header();
-      air_monitor_epaper_layout::draw_info_triangle(display, display.width() - 18, 13, 14, 26);
       draw_info_meta_row(host_text.c_str(), ip_text.c_str());
-      draw_info_cards("Instructions", INFO_INSTRUCTIONS_URL,
-                      "Local Dashboard", dashboard_target.c_str());
+      draw_info_cards("INSTRUCTIONS", INFO_INSTRUCTIONS_URL,
+                      "DASHBOARD", dashboard_target.c_str());
     }
 
     inline void render_info_disconnected()
     {
       const std::string setup_ap_name = esphome::App.get_name();
-      air_monitor_epaper_layout::render_disconnected_info_layout(
-          display, setup_ap_name.c_str(), INFO_INSTRUCTIONS_URL,
-          [](int x, int y, const char *target, int scale, int padding)
-          {
-            draw_info_qr_card(x, y, target, scale, padding);
-          });
+      draw_info_header();
+      air_monitor_epaper_layout::print_left(display, 16, 63, &SG_Caps10, "WIFI");
+      air_monitor_epaper_layout::print_left(display, 80, 63, &SG_Info12, "Not connected");
+      air_monitor_epaper_layout::print_left(display, 16, 84, &SG_Caps10, "SETUP AP");
+      air_monitor_epaper_layout::print_left(display, 80, 84, &SG_Info12, setup_ap_name.c_str());
+      air_monitor_epaper_layout::draw_divider(display, 16, display.width() - 17, 94);
+      air_monitor_epaper_layout::print_centered(display, 104, 111, &SG_Caps13, "INSTRUCTIONS");
+      draw_info_qr_card(49, 120, INFO_INSTRUCTIONS_URL);
+      display.drawLine(208, 106, 208, 224, GxEPD_BLACK);
+      air_monitor_epaper_layout::print_centered(display, 312, 111, &SG_Caps13, "WIFI SETUP");
+      air_monitor_epaper_layout::print_left(display, 228, 145, &SG_Info12, "Restart the board.");
+      air_monitor_epaper_layout::print_left(display, 228, 166, &SG_Info12, "Join the setup Wi-Fi.");
+      air_monitor_epaper_layout::print_left(display, 228, 187, &SG_Info12, "Open 192.168.4.1");
     }
 
     inline void render_info(bool full)

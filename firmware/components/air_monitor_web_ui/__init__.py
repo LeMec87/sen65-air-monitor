@@ -99,5 +99,6 @@ async def to_code(config):
     if CONF_FW_UPDATE in config:
         fw = await cg.get_variable(config[CONF_FW_UPDATE])
         cg.add(var.set_fw_update(fw))
+        cg.add(var.set_fw_update_component(fw))
         fw_id = config[CONF_FW_UPDATE].id
-        cg.add(var.set_on_check_update(cg.RawExpression(f"[=]() {{ {fw_id}->update(); }}")))
+        cg.add(var.set_on_check_update(cg.RawExpression(f"[=]() {{ {fw_id}->check(); }}")))

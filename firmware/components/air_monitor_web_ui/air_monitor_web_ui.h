@@ -10,6 +10,8 @@
 #include "esphome/core/preferences.h"
 #include "esphome/components/json/json_util.h"
 #include "weather_types.h"
+#include "firmware_release.h"
+#include "esphome/components/network/util.h"
 
 #include <string>
 #include <cmath>
@@ -43,7 +45,11 @@ namespace air_monitor
     void set_voc(Sensor *s) { voc_ = s; }
     void set_nox(Sensor *s) { nox_ = s; }
 
-    void set_fw_update(UpdateEntity *u) { fw_update_ = u; }
+    void set_fw_update(UpdateEntity *u) {
+      fw_update_ = u;
+      u->add_on_state_callback([this]() { fw_checking_ = false; fw_update_error_.clear(); });
+    }
+    void set_fw_update_component(esphome::Component *c) { fw_update_component_ = c; }
     void set_temp_unit_switch(Select *s) { temp_unit_select_ = s; }
     void set_on_check_update(std::function<void()> f) { on_check_update_ = f; }
     void set_on_weather_refresh(std::function<void()> f) { on_weather_refresh_ = f; }
@@ -98,6 +104,17 @@ namespace air_monitor
       ESP_LOGCONFIG(TAG, "  Firmware version: unknown");
 #endif
       ESP_LOGCONFIG(TAG, "  http_request update wired: %s", fw_update_ != nullptr ? "YES" : "NO");
+    }
+
+    void loop() override {
+      if (!fw_checking_) return;
+      if (fw_update_component_ != nullptr && fw_update_component_->status_has_error()) {
+        fw_checking_ = false;
+        fw_update_error_ = "Update check failed. Check internet access and try again.";
+      } else if (esphome::millis() - fw_check_started_ms_ > 30000) {
+        fw_checking_ = false;
+        fw_update_error_ = "Update check timed out. Please try again.";
+      }
     }
 
     // AsyncWebHandler interface
@@ -170,6 +187,10 @@ namespace air_monitor
     Sensor *nox_{nullptr};
 
     UpdateEntity *fw_update_{nullptr};
+    esphome::Component *fw_update_component_{nullptr};
+    bool fw_checking_{false};
+    uint32_t fw_check_started_ms_{0};
+    std::string fw_update_error_;
     Select *temp_unit_select_{nullptr};
     std::function<void()> on_check_update_{nullptr};
     std::function<void()> on_weather_refresh_{nullptr};
@@ -306,7 +327,6 @@ namespace air_monitor
 
     void handle_state_(AsyncWebServerRequest *request)
     {
-      char json[800];
       const char *ver =
 #ifdef ESPHOME_PROJECT_VERSION
           ESPHOME_PROJECT_VERSION;
@@ -316,79 +336,44 @@ namespace air_monitor
 
       const bool use_f = temp_unit_select_ == nullptr || temp_unit_select_->current_option() != "Celsius";
 
-      bool has_update = false;
-      const char *latest_version = "";
-      const char *update_state_str = "unknown";
-      float update_progress = 0.0f;
-
-      if (fw_update_ != nullptr)
-      {
-        has_update = fw_update_->state == esphome::update::UPDATE_STATE_AVAILABLE;
-        latest_version = fw_update_->update_info.latest_version.c_str();
-        if (fw_update_->state == esphome::update::UPDATE_STATE_NO_UPDATE)
-            update_state_str = "no_update";
-        else if (fw_update_->state == esphome::update::UPDATE_STATE_AVAILABLE)
-            update_state_str = "available";
-        else if (fw_update_->state == esphome::update::UPDATE_STATE_INSTALLING)
-            update_state_str = "installing";
-
-        if (fw_update_->update_info.has_progress)
-            update_progress = fw_update_->update_info.progress;
+      std::string error = fw_update_error_;
+      if (fw_update_component_ != nullptr && fw_update_component_->status_has_error() && error.empty())
+        error = "Firmware check or installation failed. Check internet access and try again.";
+      const bool valid = fw_update_ != nullptr && release::valid_download(
+          fw_update_->update_info.latest_version, fw_update_->update_info.firmware_url, fw_update_->update_info.md5);
+      const bool newer = fw_update_ != nullptr && release::is_newer(fw_update_->update_info.latest_version, ver);
+      const char *state = "unknown";
+      float progress = 0;
+      if (fw_update_ != nullptr) {
+        if (fw_update_->state == esphome::update::UPDATE_STATE_INSTALLING) state = "installing";
+        else if (!fw_update_->update_info.latest_version.empty()) {
+          if (!valid && error.empty()) error = "Published firmware metadata is invalid. Installation is disabled.";
+          state = newer && valid ? "available" : "no_update";
+        }
+        if (fw_update_->update_info.has_progress) progress = fw_update_->update_info.progress;
       }
-
-      // Build JSON incrementally so each sensor emits null when unavailable.
-      // After each snprintf, clamp the advance to avoid underflowing rem.
-      char *p = json;
-      int rem = sizeof(json);
-      int n;
-
-      auto advance = [&](int written) {
-        int clamped = (written < rem) ? written : rem - 1;
-        if (clamped < 0) clamped = 0;
-        p += clamped;
-        rem -= clamped;
-      };
-
-      n = snprintf(p, rem, "{"); advance(n);
-
-      struct { const char *key; Sensor *s; const char *fmt; } sensors[] = {
-        {"co2",  co2_,  "%.1f"}, {"temp", temp_, "%.2f"}, {"rh",   rh_,   "%.2f"},
-        {"pm1",  pm1_,  "%.1f"}, {"pm25", pm25_, "%.1f"}, {"pm4",  pm4_,  "%.1f"},
-        {"pm10", pm10_, "%.1f"}, {"voc",  voc_,  "%.1f"}, {"nox",  nox_,  "%.1f"},
-      };
-      for (size_t i = 0; i < sizeof(sensors) / sizeof(sensors[0]); i++)
-      {
-        n = append_sensor_(p, rem, sensors[i].key, sensors[i].s, sensors[i].fmt);
-        advance(n);
-        n = snprintf(p, rem, ","); advance(n);
-      }
-
-      char escaped_version[64];
-      json_escape_(escaped_version, sizeof(escaped_version), latest_version);
-
-      n = snprintf(p, rem,
-               "\"fw_version\":\"%.48s\","
-               "\"temp_unit\":\"%s\","
-               "\"has_update\":%s,"
-               "\"latest_version\":\"%s\","
-               "\"update_state\":\"%s\","
-               "\"update_progress\":%.2f}",
-               ver,
-               use_f ? "F" : "C",
-               has_update ? "true" : "false",
-               escaped_version,
-               update_state_str,
-               update_progress);
-      advance(n);
-
-      if (rem <= 0)
-      {
-        ESP_LOGW(TAG, "JSON response truncated");
-        request->send(500, "application/json", "{\"error\":\"response_truncated\"}");
-        return;
-      }
-
-      request->send(200, "application/json", json);
+      if (!error.empty()) state = "error";
+      const auto body = esphome::json::build_json([&](JsonObject root) {
+        struct { const char *key; Sensor *sensor; } sensors[] = {
+          {"co2", co2_}, {"temp", temp_}, {"rh", rh_}, {"pm1", pm1_}, {"pm25", pm25_},
+          {"pm4", pm4_}, {"pm10", pm10_}, {"voc", voc_}, {"nox", nox_}
+        };
+        for (auto &entry : sensors) {
+          if (has_value_(entry.sensor)) root[entry.key] = entry.sensor->state;
+          else root[entry.key] = nullptr;
+        }
+        root["fw_version"] = ver;
+        root["temp_unit"] = use_f ? "F" : "C";
+        root["update_configured"] = fw_update_ != nullptr;
+        root["update_checking"] = fw_checking_;
+        root["update_error"] = error;
+        root["has_update"] = newer && valid && error.empty() && !fw_checking_ &&
+            fw_update_->state == esphome::update::UPDATE_STATE_AVAILABLE;
+        root["latest_version"] = fw_update_ == nullptr ? "" : fw_update_->update_info.latest_version.c_str();
+        root["update_state"] = state;
+        root["update_progress"] = progress;
+      });
+      request->send(200, "application/json", body.c_str());
     }
 
 
@@ -408,10 +393,23 @@ namespace air_monitor
         return;
       }
 
-      ESP_LOGI(TAG, "Starting http_request firmware update via web UI");
+#ifdef ESPHOME_PROJECT_VERSION
+      const std::string current = ESPHOME_PROJECT_VERSION;
+#else
+      const std::string current = "unknown";
+#endif
+      const auto &info = fw_update_->update_info;
+      if (fw_checking_ || fw_update_->state != esphome::update::UPDATE_STATE_AVAILABLE ||
+          !fw_update_error_.empty() || (fw_update_component_ && fw_update_component_->status_has_error()) ||
+          !release::is_newer(info.latest_version, current) ||
+          !release::valid_download(info.latest_version, info.firmware_url, info.md5)) {
+        request->send(409, "application/json", "{\"ok\":false,\"error\":\"No verified newer firmware is available. Check for updates first.\"}");
+        return;
+      }
+      ESP_LOGI(TAG, "Starting GitHub firmware update via web UI");
       // false = do not force if it thinks there is no update; UI already checks versions
       fw_update_->perform(false);
-      request->send(200, "application/json", "{\"ok\":true}");
+      request->send(202, "application/json", "{\"ok\":true}");
     }
 
     void handle_check_update_(AsyncWebServerRequest *request)
@@ -430,12 +428,24 @@ namespace air_monitor
         return;
       }
 
-      ESP_LOGI(TAG, "Triggering firmware update check via web UI");
+      if (!esphome::network::is_connected()) {
+        request->send(503, "application/json", "{\"ok\":false,\"error\":\"Wi-Fi is not connected.\"}");
+        return;
+      }
+      if (fw_checking_ || fw_update_->state == esphome::update::UPDATE_STATE_INSTALLING) {
+        request->send(409, "application/json", "{\"ok\":false,\"error\":\"A firmware check or installation is already running.\"}");
+        return;
+      }
+      fw_update_error_.clear();
+      if (fw_update_component_) fw_update_component_->status_clear_error();
+      fw_checking_ = true;
+      fw_check_started_ms_ = esphome::millis();
+      ESP_LOGI(TAG, "Triggering GitHub firmware update check via web UI");
       if (on_check_update_)
       {
-        on_check_update_();
+        defer("firmware_check", [this]() { on_check_update_(); });
       }
-      request->send(200, "application/json", "{\"ok\":true}");
+      request->send(202, "application/json", "{\"ok\":true}");
     }
 
     void handle_temp_unit_(AsyncWebServerRequest *request)

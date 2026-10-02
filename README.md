@@ -6,8 +6,26 @@ Sensirion SEN65 and a Topwin TWE0370NQN35-MNG-A0 e-paper display
 The firmware renders its interface at 416×240 pixels in landscape orientation.
 
 The firmware is maintained in this repository and does not use the upstream
-Aether OTA manifest. Updates are built locally and installed over USB or the
-ESPHome OTA connection.
+Aether OTA manifest. From **v0.3.1**, the local dashboard checks this project's
+GitHub manifest and can install newer releases over Wi-Fi. USB and ESPHome
+OTA remain available for initial installation and recovery.
+
+## Using your monitor
+
+1. On an unconfigured board, join its setup Wi-Fi network and open
+   `http://192.168.4.1/` to enter your Wi-Fi credentials.
+2. Once connected, press BOOT to reach **Device Information**. Scan
+   **DASHBOARD** to open the board's local page while on the same network.
+   **INSTRUCTIONS** opens this public guide and requires internet access.
+3. Use short BOOT presses to cycle through overview, particles, gases,
+   climate and device information. Each graph covers up to the last 24 hours.
+4. In the dashboard, choose Celsius/Fahrenheit, save a weather city, or use
+   **Firmware & Updates** to check for a newer release.
+
+Boards running **v0.3.0 or older need one initial installation of v0.3.1 or
+newer via ESPHome OTA or USB** before dashboard updates can work. Publishing
+new files on GitHub never installs them automatically. See the
+[update and recovery guide](docs/updates.md).
 
 ## Features
 
@@ -21,6 +39,7 @@ ESPHome OTA connection.
   update contributes to a five-minute averaged history point
 - low-flicker e-paper animation while the sensor starts
 - local web dashboard and `/api/state`
+- checksum-checked GitHub updates with HTTPS certificate verification (v0.3.1+)
 - exact display capture at `/screen.pbm`
 - ESPHome/Home Assistant API
 - Wi-Fi onboarding through captive portal and Improv Serial/BLE
@@ -54,9 +73,9 @@ histories are illustrative sample data, not recorded measurements.
 
 ![Display pages](docs/display/display-pages.png)
 
-The device-information page places the hostname and IP address on separate
-lines. The BOOT button cycles through overview, particles, gases, climate
-and device information.
+The device-information page uses Space Grotesk, inset dividers and two aligned
+QR blocks. Hostname and IP address remain on separate lines. Public preview
+connection details are anonymized; the board shows its real addresses.
 
 ![Startup animation](docs/display/boot-animation.gif)
 
@@ -107,11 +126,15 @@ again after a reboot and reaches the full 24-hour window after 288 samples.
 
 ## Install
 
-Weather-code mapping and location validation can be tested without a board:
+Weather mapping and firmware version/download validation can be tested without
+a board:
 
 ```bash
 c++ -std=c++17 tests/weather_test.cpp -o /tmp/sen65-weather-test
 /tmp/sen65-weather-test
+c++ -std=c++17 tests/firmware_release_test.cpp -o /tmp/sen65-release-test
+/tmp/sen65-release-test
+python3 tests/release_manifest_test.py
 ```
 
 First installation or recovery over USB:
@@ -128,6 +151,8 @@ Update a configured device over Wi-Fi:
 .venv/bin/esphome upload firmware/sen65-air-monitor.yaml \
   --device sen65-air-monitor-XXXXXX.local
 ```
+
+For dashboard updates and release packaging, see [docs/updates.md](docs/updates.md).
 
 ## Fonts
 
