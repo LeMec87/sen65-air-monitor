@@ -105,11 +105,13 @@ namespace air_monitor
     static uint16_t g_history_head = 0;
     static uint16_t g_history_count = 0;
     static unsigned long g_last_history_sample_ms = 0;
+    static float g_history_accumulator[HISTORY_METRIC_COUNT] = {};
+    static uint16_t g_history_accumulator_count = 0;
 
     // --- Config ---
     static constexpr unsigned long NORMAL_REFRESH_MS = 5000;
     static constexpr unsigned long HISTORY_SAMPLE_MS = 5UL * 60UL * 1000UL;
-    static constexpr unsigned long BOOT_FRAME_MS = 500;
+    static constexpr unsigned long BOOT_FRAME_MS = 900;
     static constexpr uint8_t BOOT_SLASH_FRAME_COUNT = 4;
     static constexpr unsigned long BOOT_TIMEOUT_MS = 75000;
     static constexpr const char *INFO_INSTRUCTIONS_URL = "http://sen65-air-monitor.local/";
@@ -219,6 +221,19 @@ namespace air_monitor
       display.setTextColor(GxEPD_BLACK);
       air_monitor_epaper_layout::print_left(display, g_boot_layout.left_x, g_boot_layout.baseline_y,
                                             &SG_Boot28, "AIR MONITOR");
+      air_monitor_epaper_layout::print_centered(display, display.width() / 2,
+                                                 g_boot_layout.baseline_y + 34,
+                                                 &SG_Caps10, "SENSORS STARTING");
+      const int start_x = display.width() / 2 - 35;
+      const int y = g_boot_layout.baseline_y + 46;
+      for (uint8_t i = 0; i < BOOT_SLASH_FRAME_COUNT; ++i)
+      {
+        const int x = start_x + i * 20;
+        if (i == frame)
+          display.fillRect(x, y - 2, 11, 4, GxEPD_BLACK);
+        else
+          display.drawLine(x, y, x + 10, y, GxEPD_BLACK);
+      }
     }
 
     inline float history_value(HistoryMetric metric, uint16_t logical_index)
@@ -234,17 +249,40 @@ namespace air_monitor
     {
       if (!all_metrics_ready())
         return;
-      if (g_history_count > 0 && now - g_last_history_sample_ms < HISTORY_SAMPLE_MS)
-        return;
 
       const float values[HISTORY_METRIC_COUNT] = {
           g_pm1, g_pm25, g_pm4, g_pm10, g_voc, g_nox, g_temp, g_rh};
+
+      // Make the first valid reading visible immediately.
+      if (g_history_count == 0)
+      {
+        for (size_t metric = 0; metric < HISTORY_METRIC_COUNT; ++metric)
+          g_history[metric][g_history_head] = values[metric];
+        g_history_head = (g_history_head + 1) % HISTORY_POINTS;
+        g_history_count = 1;
+        g_last_history_sample_ms = now;
+        return;
+      }
+
+      // Every sensor update contributes to the next five-minute point.
       for (size_t metric = 0; metric < HISTORY_METRIC_COUNT; ++metric)
-        g_history[metric][g_history_head] = values[metric];
+        g_history_accumulator[metric] += values[metric];
+      ++g_history_accumulator_count;
+
+      if (now - g_last_history_sample_ms < HISTORY_SAMPLE_MS)
+        return;
+
+      for (size_t metric = 0; metric < HISTORY_METRIC_COUNT; ++metric)
+      {
+        g_history[metric][g_history_head] =
+            g_history_accumulator[metric] / g_history_accumulator_count;
+        g_history_accumulator[metric] = 0.0f;
+      }
 
       g_history_head = (g_history_head + 1) % HISTORY_POINTS;
       if (g_history_count < HISTORY_POINTS)
         ++g_history_count;
+      g_history_accumulator_count = 0;
       g_last_history_sample_ms = now;
     }
 
@@ -253,50 +291,37 @@ namespace air_monitor
       display.fillScreen(GxEPD_WHITE);
       display.setTextColor(GxEPD_BLACK);
       air_monitor_epaper_layout::print_left(display, 16, 29, &SG_Head18, title);
-      air_monitor_epaper_layout::print_right(display, display.width() - 16, 27, &SG_Caps13, "LAST 24H");
+      char header_meta[20];
+      snprintf(header_meta, sizeof(header_meta), "24H  %s", page);
+      air_monitor_epaper_layout::print_right(display, display.width() - 16, 27, &SG_Caps13, header_meta);
       display.drawLine(16, 40, display.width() - 16, 40, GxEPD_BLACK);
-      air_monitor_epaper_layout::print_right(display, display.width() - 16, 236, &SG_Caps10, page);
     }
 
-    inline void format_history_value(char *buffer, size_t size, float value,
-                                     const char *suffix, bool one_decimal)
+    struct HistorySeries
     {
-      if (!std::isfinite(value))
-      {
-        snprintf(buffer, size, "--%s", suffix);
-        return;
-      }
-      snprintf(buffer, size, one_decimal ? "%.1f%s" : "%.0f%s", value, suffix);
+      const char *label;
+      HistoryMetric metric;
+      float current;
+      const char *suffix;
+      bool one_decimal;
+      uint8_t line_style;
+    };
+
+    inline void draw_styled_history_segment(int x0, int y0, int x1, int y1,
+                                            uint8_t style, uint16_t segment)
+    {
+      bool draw = style == 0;
+      if (style == 1) draw = (segment % 8) < 5;
+      if (style == 2) draw = (segment % 4) == 0;
+      if (style == 3) draw = (segment % 12) < 5 || (segment % 12) == 8;
+      if (draw)
+        display.drawLine(x0, y0, x1, y1, GxEPD_BLACK);
     }
 
-    inline void draw_history_chart(int x, int y, int width, int height,
-                                   const char *label, HistoryMetric metric,
-                                   float current, const char *suffix,
-                                   bool one_decimal)
+    inline void history_bounds(HistoryMetric metric, float &min_value, float &max_value)
     {
-      char value_text[24];
-      format_history_value(value_text, sizeof(value_text), current, suffix, one_decimal);
-      air_monitor_epaper_layout::print_left(display, x, y + 15, &SG_Caps13, label);
-      air_monitor_epaper_layout::print_right(display, x + width, y + 17, &SG_Value20, value_text);
-
-      const int plot_top = y + 25;
-      const int plot_bottom = y + height - 7;
-      const int plot_height = plot_bottom - plot_top;
-      display.drawLine(x, plot_bottom, x + width, plot_bottom, GxEPD_BLACK);
-      for (int dash_x = x; dash_x < x + width; dash_x += 12)
-        display.drawLine(dash_x, plot_top + plot_height / 2,
-                         (dash_x + 5 < x + width ? dash_x + 5 : x + width),
-                         plot_top + plot_height / 2, GxEPD_BLACK);
-
-      if (g_history_count == 0)
-      {
-        air_monitor_epaper_layout::print_centered(display, x + width / 2, plot_top + plot_height / 2 + 4,
-                                                   &SG_Caps10, "WAITING FOR DATA");
-        return;
-      }
-
-      float min_value = history_value(metric, 0);
-      float max_value = min_value;
+      min_value = history_value(metric, 0);
+      max_value = min_value;
       for (uint16_t i = 1; i < g_history_count; ++i)
       {
         const float value = history_value(metric, i);
@@ -304,29 +329,116 @@ namespace air_monitor
         if (value > max_value) max_value = value;
       }
       float range = max_value - min_value;
-      if (range < 0.1f)
-        range = 1.0f;
-      const float padding = range * 0.12f;
-      min_value -= padding;
-      max_value += padding;
-      range = max_value - min_value;
+      if (range < 0.1f) range = 1.0f;
+      min_value -= range * 0.12f;
+      max_value += range * 0.12f;
+    }
 
-      int previous_x = 0;
-      int previous_y = 0;
-      for (uint16_t i = 0; i < g_history_count; ++i)
+    inline void draw_history_legend_item(int x, int baseline_y,
+                                         const HistorySeries &series)
+    {
+      for (uint8_t i = 0; i < 18; ++i)
       {
-        const float value = history_value(metric, i);
-        const int px = x + width - static_cast<int>((g_history_count - 1 - i) * width / (HISTORY_POINTS - 1));
-        const int py = plot_bottom - 1 - static_cast<int>((value - min_value) * (plot_height - 2) / range);
-        if (i > 0)
-          display.drawLine(previous_x, previous_y, px, py, GxEPD_BLACK);
-        previous_x = px;
-        previous_y = py;
+        bool ink = series.line_style == 0;
+        if (series.line_style == 1) ink = (i % 8) < 5;
+        if (series.line_style == 2) ink = (i % 4) == 0;
+        if (series.line_style == 3) ink = (i % 12) < 5 || (i % 12) == 8;
+        if (ink) display.drawPixel(x + i, baseline_y - 4, GxEPD_BLACK);
       }
-      display.fillCircle(previous_x, previous_y, 2, GxEPD_BLACK);
+
+      char text[32];
+      if (!std::isfinite(series.current))
+        snprintf(text, sizeof(text), "%s --", series.label);
+      else
+        snprintf(text, sizeof(text), series.one_decimal ? "%s %.1f%s" : "%s %.0f%s",
+                 series.label, series.current, series.suffix);
+      air_monitor_epaper_layout::print_left(display, x + 25, baseline_y, &SG_Caps13, text);
+    }
+
+    inline void draw_combined_history_chart(const HistorySeries *series,
+                                            size_t series_count,
+                                            bool independent_scales)
+    {
+      const int legend_columns = series_count > 2 ? 2 : static_cast<int>(series_count);
+      const int legend_rows = (series_count + legend_columns - 1) / legend_columns;
+      const int legend_width = (display.width() - 32) / legend_columns;
+      for (size_t i = 0; i < series_count; ++i)
+      {
+        const int column = i % legend_columns;
+        const int row = i / legend_columns;
+        draw_history_legend_item(16 + column * legend_width, 60 + row * 20, series[i]);
+      }
+
+      const int left = 16;
+      const int right = display.width() - 16;
+      const int top = legend_rows == 1 ? 76 : 94;
+      const int bottom = 218;
+      const int width = right - left;
+      const int height = bottom - top;
+
+      display.drawRect(left, top, width + 1, height + 1, GxEPD_BLACK);
+      for (int row = 1; row < 4; ++row)
+      {
+        const int y = top + row * height / 4;
+        for (int x = left + 1; x < right; x += 12)
+          display.drawLine(x, y, x + 5, y, GxEPD_BLACK);
+      }
+      for (int x = left + width / 4; x < right; x += width / 4)
+        for (int y = top + 1; y < bottom; y += 10)
+          display.drawLine(x, y, x, y + 4, GxEPD_BLACK);
+
+      air_monitor_epaper_layout::print_left(display, left, 236, &SG_Caps10, "-24H");
+      air_monitor_epaper_layout::print_centered(display, left + width / 2, 236, &SG_Caps10, "-12H");
+      air_monitor_epaper_layout::print_right(display, right, 236, &SG_Caps10, "NOW");
+
+      if (g_history_count == 0)
+      {
+        air_monitor_epaper_layout::print_centered(display, display.width() / 2,
+                                                   top + height / 2 + 4,
+                                                   &SG_Caps13, "WAITING FOR DATA");
+        return;
+      }
+
+      float shared_min = 0.0f;
+      float shared_max = 0.0f;
+      if (!independent_scales)
+      {
+        history_bounds(series[0].metric, shared_min, shared_max);
+        for (size_t s = 1; s < series_count; ++s)
+        {
+          float series_min, series_max;
+          history_bounds(series[s].metric, series_min, series_max);
+          if (series_min < shared_min) shared_min = series_min;
+          if (series_max > shared_max) shared_max = series_max;
+        }
+      }
+
+      for (size_t s = 0; s < series_count; ++s)
+      {
+        float min_value = shared_min;
+        float max_value = shared_max;
+        if (independent_scales)
+          history_bounds(series[s].metric, min_value, max_value);
+        const float range = max_value - min_value;
+        int previous_x = 0;
+        int previous_y = 0;
+        for (uint16_t i = 0; i < g_history_count; ++i)
+        {
+          const float value = history_value(series[s].metric, i);
+          const int px = right - static_cast<int>((g_history_count - 1 - i) * width / (HISTORY_POINTS - 1));
+          const int py = bottom - 2 - static_cast<int>((value - min_value) * (height - 4) / range);
+          if (i > 0)
+            draw_styled_history_segment(previous_x, previous_y, px, py,
+                                        series[s].line_style, i);
+          previous_x = px;
+          previous_y = py;
+        }
+        display.fillCircle(previous_x, previous_y, s == 0 ? 2 : 1, GxEPD_BLACK);
+      }
 
       if (g_history_count < 2)
-        air_monitor_epaper_layout::print_left(display, x + 4, plot_bottom - 5, &SG_Caps10, "COLLECTING");
+        air_monitor_epaper_layout::print_left(display, left + 7, bottom - 8,
+                                               &SG_Caps10, "COLLECTING");
     }
 
     // --- High-Level Renderers ---
@@ -339,7 +451,31 @@ namespace air_monitor
           display.fillScreen(GxEPD_WHITE);
           draw_boot_content(frame); });
       }
-      // The project wordmark is static; no partial boot animation is needed.
+      else
+      {
+        const int animation_y = g_boot_layout.baseline_y + 20;
+        display.setPartialWindow(136, animation_y, 144, 40);
+        display.firstPage();
+        do
+        {
+          display.fillRect(136, animation_y, 144, 40, GxEPD_WHITE);
+          display.setTextColor(GxEPD_BLACK);
+          air_monitor_epaper_layout::print_centered(display, display.width() / 2,
+                                                     g_boot_layout.baseline_y + 34,
+                                                     &SG_Caps10, "SENSORS STARTING");
+          const int start_x = display.width() / 2 - 35;
+          const int y = g_boot_layout.baseline_y + 46;
+          for (uint8_t i = 0; i < BOOT_SLASH_FRAME_COUNT; ++i)
+          {
+            const int x = start_x + i * 20;
+            if (i == frame)
+              display.fillRect(x, y - 2, 11, 4, GxEPD_BLACK);
+            else
+              display.drawLine(x, y, x + 10, y, GxEPD_BLACK);
+          }
+          esphome::App.feed_wdt();
+        } while (display.nextPage());
+      }
     }
 
     inline void render_normal(bool full)
@@ -357,13 +493,13 @@ namespace air_monitor
       render_paged(full, []()
                    {
         draw_history_header("PARTICLES", "2 / 5");
-        draw_history_chart(16, 47, 180, 78, "PM1", HISTORY_PM1, g_pm1, "", true);
-        draw_history_chart(220, 47, 180, 78, "PM2.5", HISTORY_PM25, g_pm25, "", true);
-        draw_history_chart(16, 140, 180, 78, "PM4", HISTORY_PM4, g_pm4, "", true);
-        draw_history_chart(220, 140, 180, 78, "PM10", HISTORY_PM10, g_pm10, "", true);
-        display.drawLine(208, 50, 208, 121, GxEPD_BLACK);
-        display.drawLine(208, 144, 208, 215, GxEPD_BLACK);
-        display.drawLine(24, 132, display.width() - 24, 132, GxEPD_BLACK); });
+        const HistorySeries series[] = {
+          {"PM1", HISTORY_PM1, g_pm1, "", true, 0},
+          {"PM2.5", HISTORY_PM25, g_pm25, "", true, 1},
+          {"PM4", HISTORY_PM4, g_pm4, "", true, 2},
+          {"PM10", HISTORY_PM10, g_pm10, "", true, 3}
+        };
+        draw_combined_history_chart(series, 4, false); });
       g_last_normal_render_ms = millis();
     }
 
@@ -372,9 +508,11 @@ namespace air_monitor
       render_paged(full, []()
                    {
         draw_history_header("GASES", "3 / 5");
-        draw_history_chart(16, 48, 384, 76, "VOC", HISTORY_VOC, g_voc, "", false);
-        draw_history_chart(16, 141, 384, 76, "NOX", HISTORY_NOX, g_nox, "", false);
-        display.drawLine(24, 132, display.width() - 24, 132, GxEPD_BLACK); });
+        const HistorySeries series[] = {
+          {"VOC", HISTORY_VOC, g_voc, "", false, 0},
+          {"NOX", HISTORY_NOX, g_nox, "", false, 1}
+        };
+        draw_combined_history_chart(series, 2, true); });
       g_last_normal_render_ms = millis();
     }
 
@@ -384,10 +522,11 @@ namespace air_monitor
       render_paged(full, [shown_temp]()
                    {
         draw_history_header("CLIMATE", "4 / 5");
-        draw_history_chart(16, 48, 384, 76, "TEMPERATURE", HISTORY_TEMP,
-                           shown_temp, g_use_f ? "F" : "C", true);
-        draw_history_chart(16, 141, 384, 76, "HUMIDITY", HISTORY_RH, g_rh, "%", true);
-        display.drawLine(24, 132, display.width() - 24, 132, GxEPD_BLACK); });
+        const HistorySeries series[] = {
+          {"TEMP", HISTORY_TEMP, shown_temp, g_use_f ? "F" : "C", true, 0},
+          {"HUM", HISTORY_RH, g_rh, "%", true, 1}
+        };
+        draw_combined_history_chart(series, 2, true); });
       g_last_normal_render_ms = millis();
     }
 

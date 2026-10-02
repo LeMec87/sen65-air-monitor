@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.1 - 2026-10-02
+
+- combined each category into one full-width graph
+- added monochrome line styles and compact live-value legends
+- included every sensor update in five-minute averaged history points
+- added a low-flicker sensor-start animation
+
 ## 0.2.0 - 2026-10-02
 
 - added boot-button navigation across overview, particles, gases, climate and

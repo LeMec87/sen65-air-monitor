@@ -14,7 +14,9 @@ ESPHome OTA connection.
 - date, local time and current weather icon
 - automatic city-level location via IP and weather via Open-Meteo
 - day/night icons including sun, cloud, rain and moon
-- 24-hour charts for particles, gases and climate (5-minute samples)
+- full-width 24-hour charts for particles, gases and climate; every sensor
+  update contributes to a five-minute averaged history point
+- low-flicker e-paper animation while the sensor starts
 - local web dashboard and `/api/state`
 - exact display capture at `/screen.pbm`
 - ESPHome/Home Assistant API
