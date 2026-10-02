@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.3.0 - 2026-10-02
+
+- added a Weather dashboard tab with city search and automatic IP-location mode
+- persisted the weather location and mode across restarts
+- expanded display icons to sun, partly cloudy, cloudy, light rain, heavy rain,
+  thunderstorm and a moon for clear nights
+- added current location, condition, last-update age, stale/error status and
+  rate-limited manual weather refresh
+- clear the old location's icon when selecting a different city
+
 ## 0.2.2 - 2026-10-02
 
 - placed hostname and IP address on separate lines in device information

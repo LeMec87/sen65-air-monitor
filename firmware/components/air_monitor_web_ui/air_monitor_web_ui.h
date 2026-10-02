@@ -7,6 +7,9 @@
 #include "esphome/components/web_server_base/web_server_base.h"
 #include "esphome/components/sensor/sensor.h"
 #include "esphome/components/update/update_entity.h"
+#include "esphome/core/preferences.h"
+#include "esphome/components/json/json_util.h"
+#include "weather_types.h"
 
 #include <string>
 #include <cmath>
@@ -43,9 +46,39 @@ namespace air_monitor
     void set_fw_update(UpdateEntity *u) { fw_update_ = u; }
     void set_temp_unit_switch(Select *s) { temp_unit_select_ = s; }
     void set_on_check_update(std::function<void()> f) { on_check_update_ = f; }
+    void set_on_weather_refresh(std::function<void()> f) { on_weather_refresh_ = f; }
+    float weather_latitude() const { return weather_settings_.manual ? weather_settings_.latitude : auto_lat_; }
+    float weather_longitude() const { return weather_settings_.manual ? weather_settings_.longitude : auto_lon_; }
+    int weather_kind() const { return weather_kind_; }
+    bool weather_has_location() const {
+      return weather::valid_coordinates(weather_latitude(), weather_longitude());
+    }
+    void weather_error(const char *message) { weather_error_ = message; }
+    void weather_fetch_started() { weather_error_.clear(); weather_fetching_ = true; }
+    void weather_fetch_finished() { weather_fetching_ = false; }
+    void set_auto_weather_location(float lat, float lon, const std::string &name) {
+      if (weather_settings_.manual || !weather::valid_coordinates(lat, lon)) return;
+      auto_lat_ = lat;
+      auto_lon_ = lon;
+      auto_name_ = name.substr(0, 127);
+    }
+    bool publish_weather(int code, int is_day) {
+      const int kind = weather::from_wmo(code, is_day == 1);
+      if (kind == weather::UNKNOWN || (is_day != 0 && is_day != 1)) return false;
+      weather_kind_ = kind;
+      weather_code_ = code;
+      weather_received_ms_ = esphome::millis();
+      weather_received_ = true;
+      weather_error_.clear();
+      ESP_LOGI(TAG, "Weather: %s (WMO %d)", weather::label(kind), code);
+      return true;
+    }
 
     void setup() override
     {
+      weather_pref_ = esphome::global_preferences->make_preference<weather::Settings>(0x57455801);
+      weather::Settings stored;
+      if (weather_pref_.load(&stored) && weather::valid_settings(stored)) weather_settings_ = stored;
       auto *ws = esphome::web_server_base::global_web_server_base;
       if (ws == nullptr)
       {
@@ -101,6 +134,22 @@ namespace air_monitor
       {
         handle_temp_unit_(request);
       }
+      else if (url == "/api/weather")
+      {
+        handle_weather_(request);
+      }
+      else if (url == "/api/weather/refresh")
+      {
+        if (request->method() != HTTP_POST) {
+          request->send(405, "application/json", "{\"error\":\"method_not_allowed\"}");
+        } else if (weather_fetching_ || (weather_refresh_requested_ &&
+                   esphome::millis() - weather_refresh_requested_ms_ < 30000)) {
+          request->send(429, "application/json", "{\"error\":\"Please wait before refreshing again.\"}");
+        } else {
+          request_weather_refresh_();
+          request->send(202, "application/json", "{\"ok\":true}");
+        }
+      }
       else
       {
         request->send(404, "text/plain", "Not found");
@@ -123,6 +172,92 @@ namespace air_monitor
     UpdateEntity *fw_update_{nullptr};
     Select *temp_unit_select_{nullptr};
     std::function<void()> on_check_update_{nullptr};
+    std::function<void()> on_weather_refresh_{nullptr};
+    weather::Settings weather_settings_;
+    esphome::ESPPreferenceObject weather_pref_;
+    float auto_lat_{NAN}, auto_lon_{NAN};
+    std::string auto_name_;
+    int weather_kind_{weather::UNKNOWN}, weather_code_{-1};
+    uint32_t weather_received_ms_{0}, weather_refresh_requested_ms_{0};
+    bool weather_received_{false}, weather_refresh_requested_{false}, weather_fetching_{false};
+    std::string weather_error_;
+
+    void request_weather_refresh_() {
+      weather_refresh_requested_ = true;
+      weather_refresh_requested_ms_ = esphome::millis();
+      defer("weather_refresh", [this]() { if (on_weather_refresh_) on_weather_refresh_(); });
+    }
+
+    void handle_weather_(AsyncWebServerRequest *request) {
+      if (request->method() == HTTP_GET) {
+        const auto body = esphome::json::build_json([this](JsonObject root) {
+          root["mode"] = weather_settings_.manual ? "manual" : "auto";
+          root["location"] = weather_settings_.manual ? std::string(weather_settings_.name) : auto_name_;
+          if (weather_has_location()) {
+            root["latitude"] = weather_latitude();
+            root["longitude"] = weather_longitude();
+          } else {
+            root["latitude"] = nullptr; root["longitude"] = nullptr;
+          }
+          root["kind"] = weather_kind_;
+          root["condition"] = weather::label(weather_kind_);
+          root["weather_code"] = weather_code_;
+          root["fetching"] = weather_fetching_;
+          root["error"] = weather_error_;
+          if (weather_received_) root["age_seconds"] = (esphome::millis() - weather_received_ms_) / 1000;
+          else root["age_seconds"] = nullptr;
+          root["stale"] = weather_received_ && (esphome::millis() - weather_received_ms_ > 20 * 60 * 1000);
+        });
+        request->send(200, "application/json", body.c_str());
+        return;
+      }
+      if (request->method() != HTTP_POST) {
+        request->send(405, "application/json", "{\"error\":\"method_not_allowed\"}");
+        return;
+      }
+      if (!request->hasParam("mode")) {
+        request->send(400, "application/json", "{\"error\":\"Choose a location mode.\"}");
+        return;
+      }
+      const std::string mode = request->getParam("mode")->value();
+      weather::Settings next;
+      if (mode == "manual") {
+        if (!request->hasParam("latitude") || !request->hasParam("longitude") ||
+            !request->hasParam("name")) {
+          request->send(400, "application/json", "{\"error\":\"Choose a city from the search results.\"}");
+          return;
+        }
+        const std::string name = request->getParam("name")->value();
+        if (!weather::parse_coordinate(request->getParam("latitude")->value(), next.latitude) ||
+            !weather::parse_coordinate(request->getParam("longitude")->value(), next.longitude) ||
+            !weather::valid_coordinates(next.latitude, next.longitude) || !weather::valid_name(name)) {
+          request->send(400, "application/json", "{\"error\":\"Invalid location or coordinates.\"}");
+          return;
+        }
+        next.manual = 1;
+        std::memcpy(next.name, name.c_str(), name.size() + 1);
+      } else if (mode != "auto") {
+        request->send(400, "application/json", "{\"error\":\"Invalid location mode.\"}");
+        return;
+      }
+      if (weather_settings_.manual != next.manual || weather_settings_.latitude != next.latitude ||
+          weather_settings_.longitude != next.longitude || std::strcmp(weather_settings_.name, next.name) != 0) {
+        if (!weather_pref_.save(&next) || !esphome::global_preferences->sync()) {
+          request->send(500, "application/json", "{\"error\":\"Could not save the location. Please try again.\"}");
+          return;
+        }
+        weather_settings_ = next;
+        auto_lat_ = auto_lon_ = NAN;
+        auto_name_.clear();
+        // Never display the previous city's weather after a location change.
+        weather_kind_ = weather::UNKNOWN;
+        weather_code_ = -1;
+        weather_received_ = false;
+        weather_error_.clear();
+      }
+      request_weather_refresh_();
+      request->send(200, "application/json", "{\"ok\":true}");
+    }
 
     static bool has_value_(Sensor *s)
     {

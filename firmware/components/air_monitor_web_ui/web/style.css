@@ -16,6 +16,32 @@
   --transition-slow: 0.4s ease;
 }
 
+/* Weather settings reuse the dashboard's tokens and native keyboard controls. */
+.weather-card h2, .weather-card p { margin-top: 0; }
+.weather-current { display: flex; gap: 18px; align-items: center; padding: 20px; margin-bottom: 20px; background: rgba(107, 138, 252, .08); border: 1px solid var(--card-border); border-radius: var(--radius-md); }
+.weather-current svg { width: 42px; height: 42px; }
+#weather-location { margin-top: 6px; overflow-wrap: anywhere; }
+.weather-detail { font-size: 13px; line-height: 1.6; color: var(--text-muted); margin: 8px 0 18px; }
+.weather-detail a { color: #a9bcff; }
+.weather-label { display: block; font-size: 13px; font-weight: 600; margin: 18px 0 8px; }
+.weather-input { width: 100%; min-width: 0; min-height: 44px; border: 1px solid rgba(255,255,255,.2); border-radius: 10px; padding: 12px; background: #131722; color: var(--text-main); font: inherit; font-size: 14px; }
+.weather-search-row { display: flex; gap: 10px; }
+.weather-search-row .fw-btn { flex-shrink: 0; }
+.weather-message { min-height: 18px; font-size: 13px; line-height: 1.5; color: #c5d2ff; margin: 10px 0; }
+.weather-message[data-error="true"] { color: #ffb4b4; }
+.weather-actions { margin-top: 22px; }
+.weather-legend { display: grid; grid-template-columns: repeat(auto-fit, minmax(115px, 1fr)); gap: 10px; margin: 24px 0 18px; }
+.weather-legend-item { display: flex; align-items: center; gap: 8px; font-size: 12px; padding: 10px; border: 1px solid var(--card-border); border-radius: 10px; }
+.weather-legend-item svg { width: 24px; height: 24px; flex-shrink: 0; }
+.weather-input:focus-visible, button:focus-visible { outline: 2px solid #a9bcff; outline-offset: 3px; }
+.weather-input:disabled { opacity: .65; }
+[hidden] { display: none !important; }
+@media (max-width: 540px) {
+  .tab-buttons { display: flex; flex-wrap: wrap; }
+  .weather-search-row { flex-direction: column; }
+  .weather-actions { flex-direction: column; align-items: stretch; }
+}
+
 * {
   box-sizing: border-box;
   -webkit-font-smoothing: antialiased;

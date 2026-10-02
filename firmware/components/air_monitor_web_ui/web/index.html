@@ -26,6 +26,7 @@
       <div class="tabs">
         <div class="tab-buttons">
           <button class="tab-btn tab-btn--active" data-tab="env">Environment</button>
+          <button class="tab-btn" data-tab="weather">Weather</button>
           <button class="tab-btn" data-tab="fw">Firmware &amp; updates</button>
         </div>
 
@@ -47,6 +48,54 @@
               <div class="chip-row">
                 <div class="chip" id="chip-last-updated">Last updated: —</div>
               </div>
+            </div>
+          </div>
+
+          <div class="tab-panel" id="tab-weather">
+            <div class="card weather-card">
+              <div class="card-header">
+                <div>
+                  <h2 class="card-title">Weather location</h2>
+                  <p class="card-subtitle">Choose the outdoor weather shown on your display</p>
+                </div>
+              </div>
+              <div class="weather-current" aria-live="polite">
+                <div id="weather-current-icon" aria-hidden="true"></div>
+                <div>
+                  <strong id="weather-condition">Waiting for weather</strong>
+                  <div id="weather-location">Loading location…</div>
+                  <div class="weather-detail" id="weather-age">Updates every 15 minutes</div>
+                </div>
+              </div>
+              <p class="weather-message" id="weather-device-status" role="status"></p>
+              <form id="weather-settings-form">
+                <label class="weather-label" for="weather-mode">Location mode</label>
+                <select id="weather-mode" class="weather-input" disabled>
+                  <option value="auto">Automatic (IP-based)</option>
+                  <option value="manual">Choose a city</option>
+                </select>
+                <p class="weather-detail">Automatic mode estimates your city from your internet connection. Choosing a city is more reliable.</p>
+                <div id="weather-manual-fields" hidden>
+                  <label class="weather-label" for="weather-search">City or postal code</label>
+                  <div class="weather-search-row">
+                    <input id="weather-search" class="weather-input" type="search" placeholder="e.g. Berlin or Ho Chi Minh City" maxlength="80" autocomplete="off" aria-describedby="weather-search-status" />
+                    <button type="button" class="fw-btn fw-btn--secondary" id="weather-search-btn">Search</button>
+                  </div>
+                  <p class="weather-message" id="weather-search-status" role="status"></p>
+                  <label class="weather-label" for="weather-results">Matching locations</label>
+                  <select id="weather-results" class="weather-input" disabled>
+                    <option value="">Search for a city first</option>
+                  </select>
+                </div>
+                <div class="fw-actions weather-actions">
+                  <button type="submit" class="fw-btn" id="weather-save-btn" disabled>Save location</button>
+                  <button type="button" class="fw-btn fw-btn--secondary" id="weather-refresh-btn" disabled>Refresh weather</button>
+                </div>
+                <p class="weather-message" id="weather-save-status" role="status"></p>
+              </form>
+              <div class="weather-legend" id="weather-legend" aria-label="Display weather icons"></div>
+              <p class="weather-detail">Clear nights show a moon. Cloud and rain conditions keep their respective icons at night. Moderate rain uses the light-rain icon; fog and snow use the cloudy icon.</p>
+              <p class="weather-detail">Weather by <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo</a> · Location search by <a href="https://www.geonames.org/" target="_blank" rel="noopener noreferrer">GeoNames</a>. City search requires internet access on this browser.</p>
             </div>
           </div>
 

@@ -1,5 +1,5 @@
 substitutions:
-  fw_version: "0.2.2"
+  fw_version: "0.3.0"
 
 esphome:
   name: sen65-air-monitor
@@ -34,6 +34,8 @@ esphome:
   on_boot:
     priority: -100 # Run after all sensors/components are initialized
     then:
+      - lambda: |-
+          id(air_monitor_ui).set_on_weather_refresh([]() { id(update_weather).execute(); });
       - delay: 10min # Duration the AP remains active for setup
       - if:
           condition:
@@ -197,6 +199,7 @@ sensor:
 
 # ── Local web UI component ──────────────────────────────────────────────────────
 air_monitor_web_ui:
+  id: air_monitor_ui
   pm25: pm2_5
   temp: temp
   rh: rh
@@ -207,28 +210,18 @@ air_monitor_web_ui:
   nox: nox_index
   temp_unit_switch: temp_unit_select
 
-# ─── Weather icon (sun / cloud / rain) next to the humidity ──────────────────
-# Location comes from IP geolocation (ip-api.com, once per boot), the current
-# weather from Open-Meteo (no API key) every 15 minutes.
-
-globals:
-  - id: wx_lat
-    type: float
-    initial_value: "NAN"
-  - id: wx_lon
-    type: float
-    initial_value: "NAN"
-  - id: wx_kind # -1 unknown, 0 sun, 1 cloud, 2 rain, 3 moon
-    type: int
-    initial_value: "-1"
+# Weather settings are saved by air_monitor_ui. Automatic mode looks up the
+# IP-based city once per boot; manual mode uses the dashboard's saved city.
 
 script:
   - id: update_weather
     mode: single
     then:
+      - lambda: |-
+          id(air_monitor_ui).weather_fetch_started();
       - if:
           condition:
-            lambda: "return std::isnan(id(wx_lat));"
+            lambda: "return !id(air_monitor_ui).weather_has_location();"
           then:
             - http_request.get:
                 url: "http://ip-api.com/json/?fields=status,city,lat,lon"
@@ -237,43 +230,51 @@ script:
                 on_response:
                   then:
                     - lambda: |-
-                        json::parse_json(body, [](JsonObject root) -> bool {
+                        const bool ok = response->status_code == 200 && json::parse_json(body, [](JsonObject root) -> bool {
                           if (root["status"] != "success") return false;
-                          id(wx_lat) = root["lat"].as<float>();
-                          id(wx_lon) = root["lon"].as<float>();
+                          if (!root["lat"].is<float>() || !root["lon"].is<float>()) return false;
+                          const float lat = root["lat"].as<float>(), lon = root["lon"].as<float>();
+                          if (!air_monitor::weather::valid_coordinates(lat, lon)) return false;
+                          const std::string city = root["city"].as<std::string>();
+                          id(air_monitor_ui).set_auto_weather_location(lat, lon, city);
                           ESP_LOGI("weather", "Location: %s (%.2f, %.2f)",
-                                   root["city"].as<const char *>(), id(wx_lat), id(wx_lon));
+                                   city.c_str(), lat, lon);
                           return true;
                         });
+                        if (!ok) id(air_monitor_ui).weather_error("Location lookup failed. Select a city or retry.");
+                on_error:
+                  then:
+                    - lambda: |-
+                        id(air_monitor_ui).weather_error("Location lookup failed. Check internet access.");
       - if:
           condition:
-            lambda: "return !std::isnan(id(wx_lat));"
+            lambda: "return id(air_monitor_ui).weather_has_location();"
           then:
             - http_request.get:
                 url: !lambda |-
                   char url[160];
                   snprintf(url, sizeof(url),
                            "https://api.open-meteo.com/v1/forecast?latitude=%.3f&longitude=%.3f&current=weather_code,is_day",
-                           id(wx_lat), id(wx_lon));
+                           id(air_monitor_ui).weather_latitude(), id(air_monitor_ui).weather_longitude());
                   return std::string(url);
                 capture_response: true
                 max_response_buffer_size: 1024
                 on_response:
                   then:
                     - lambda: |-
-                        json::parse_json(body, [](JsonObject root) -> bool {
+                        const bool ok = response->status_code == 200 && json::parse_json(body, [](JsonObject root) -> bool {
                           JsonVariant code_v = root["current"]["weather_code"];
-                          if (!code_v.is<int>()) return false;
-                          const int code = code_v.as<int>();
-                          // WMO codes: 0-1 clear, drizzle/rain/showers/thunder -> rain, rest -> cloud
-                          const bool rain = (code >= 51 && code <= 67) || (code >= 80 && code <= 82) || code >= 95;
-                          const bool day = root["current"]["is_day"].as<int>() == 1;
-                          id(wx_kind) = code <= 1 ? (day ? 0 : 3) : (rain ? 2 : 1);
-                          static const char *const kNames[] = {"sun", "cloud", "rain", "moon"};
-                          ESP_LOGI("weather", "Weather code %d (%s) -> %s", code, day ? "day" : "night",
-                                   kNames[id(wx_kind)]);
-                          return true;
+                          JsonVariant day_v = root["current"]["is_day"];
+                          if (!code_v.is<int>() || !day_v.is<int>()) return false;
+                          return id(air_monitor_ui).publish_weather(code_v.as<int>(), day_v.as<int>());
                         });
+                        if (!ok) id(air_monitor_ui).weather_error("Weather update failed. Last available conditions are retained.");
+                on_error:
+                  then:
+                    - lambda: |-
+                        id(air_monitor_ui).weather_error("Weather update failed. Check internet access.");
+      - lambda: |-
+          id(air_monitor_ui).weather_fetch_finished();
 
 # ─── Time (date/time shown in place of CO2 on the display) ──────────────────
 
@@ -327,5 +328,5 @@ interval:
             id(temp_unit_select).current_option() != "Celsius",
             date_text,
             time_text,
-            id(wx_kind)
+            id(air_monitor_ui).weather_kind()
           );

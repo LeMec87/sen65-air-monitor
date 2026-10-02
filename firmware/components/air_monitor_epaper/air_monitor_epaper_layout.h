@@ -556,8 +556,10 @@ namespace air_monitor
 
       inline int level_of(float pos) { return std::min(2, static_cast<int>(pos)); }
 
-      // --- weather icons, drawn into an 18 x 16 box with top-left (x, y) ---
-      enum Weather { WEATHER_UNKNOWN = -1, WEATHER_SUN = 0, WEATHER_CLOUD = 1, WEATHER_RAIN = 2, WEATHER_MOON = 3 };
+      // --- weather icons, drawn into an 18 x 18 box with top-left (x, y) ---
+      enum Weather { WEATHER_UNKNOWN = -1, WEATHER_SUN = 0, WEATHER_CLOUD = 1,
+                     WEATHER_RAIN = 2, WEATHER_MOON = 3, WEATHER_PARTLY_CLOUDY = 4,
+                     WEATHER_HEAVY_RAIN = 5, WEATHER_THUNDERSTORM = 6 };
       static constexpr int ICON_W = 18;
 
       template <typename Display>
@@ -612,11 +614,33 @@ namespace air_monitor
         {
           draw_cloud(display, x, y + 2);
         }
-        else if (weather == WEATHER_RAIN)
+        else if (weather == WEATHER_PARTLY_CLOUDY)
         {
-          draw_cloud(display, x, y - 1);
-          for (int i = 0; i < 3; ++i)
-            draw_thick_line(display, x + 5 + 5 * i, y + 13, x + 3 + 5 * i, y + 16);
+          // Sun peeking above the cloud, with a clean white separation.
+          display.fillCircle(x + 6, y + 5, 3, GxEPD_BLACK);
+          display.drawLine(x + 6, y, x + 6, y + 1, GxEPD_BLACK);
+          display.drawLine(x + 1, y + 1, x + 2, y + 2, GxEPD_BLACK);
+          display.drawLine(x, y + 5, x + 1, y + 5, GxEPD_BLACK);
+          display.drawLine(x + 10, y + 1, x + 11, y, GxEPD_BLACK);
+          display.fillRect(x + 1, y + 8, 16, 8, GxEPD_WHITE);
+          draw_cloud(display, x, y + 4);
+        }
+        else if (weather == WEATHER_RAIN || weather == WEATHER_HEAVY_RAIN)
+        {
+          draw_cloud(display, x, y);
+          const int drops = weather == WEATHER_HEAVY_RAIN ? 4 : 2;
+          for (int i = 0; i < drops; ++i) {
+            const int dx = x + (drops == 2 ? 6 + 7 * i : 3 + 4 * i);
+            if (drops == 2) display.drawLine(dx, y + 13, dx - 1, y + 15, GxEPD_BLACK);
+            else draw_thick_line(display, dx, y + 12, dx - 2, y + 16);
+          }
+        }
+        else if (weather == WEATHER_THUNDERSTORM)
+        {
+          draw_cloud(display, x, y);
+          // Solid zigzag bolt, kept within the existing header icon box.
+          display.fillTriangle(x + 10, y + 9, x + 6, y + 14, x + 11, y + 14, GxEPD_BLACK);
+          display.fillTriangle(x + 8, y + 12, x + 13, y + 12, x + 7, y + 17, GxEPD_BLACK);
         }
       }
     } // namespace status_layout

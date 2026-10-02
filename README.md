@@ -14,8 +14,9 @@ ESPHome OTA connection.
 - SEN65 readings: PM1, PM2.5, PM4, PM10, temperature, humidity, VOC and NOx
 - custom Space Grotesk e-paper dashboard
 - date, local time and current weather icon
-- automatic city-level location via IP and weather via Open-Meteo
-- day/night icons including sun, cloud, rain and moon
+- weather location selectable in the dashboard: saved city or automatic IP-based location
+- seven weather icons: sunny, partly cloudy, cloudy, light rain, heavy rain,
+  thunderstorm and clear-night moon
 - full-width 24-hour charts for particles, gases and climate; every sensor
   update contributes to a five-minute averaged history point
 - low-flicker e-paper animation while the sensor starts
@@ -23,6 +24,27 @@ ESPHome OTA connection.
 - exact display capture at `/screen.pbm`
 - ESPHome/Home Assistant API
 - Wi-Fi onboarding through captive portal and Improv Serial/BLE
+
+## Weather settings
+
+Open the device's local dashboard and select **Weather**. Choose **Automatic
+(IP-based)**, or choose **Choose a city**, search for a city or postal code,
+select the matching city/country, and press **Save location**. The mode and
+chosen coordinates are stored on the board and survive a restart. Each board
+keeps its own location setting. Changing the weather location does not change
+the clock's configured timezone.
+
+Available from **v0.3.0**; install the firmware on a board to use these settings.
+Weather refreshes every 15 minutes and after saving a location. The tab also
+provides manual refresh, update age and error status. Clear nights show a moon;
+cloudy and rainy nights retain their weather icon. Internet access is required.
+
+These enlarged icons are rendered by the actual e-paper drawing functions:
+
+![Display weather icons](docs/display/weather-icons.png)
+
+See the [weather settings guide](docs/weather.md) for the dashboard preview,
+complete icon mapping, local API, connectivity/security and validation notes.
 
 ## Display layouts
 
@@ -84,6 +106,13 @@ The chart history is kept in RAM to avoid unnecessary flash wear. It starts
 again after a reboot and reaches the full 24-hour window after 288 samples.
 
 ## Install
+
+Weather-code mapping and location validation can be tested without a board:
+
+```bash
+c++ -std=c++17 tests/weather_test.cpp -o /tmp/sen65-weather-test
+/tmp/sen65-weather-test
+```
 
 First installation or recovery over USB:
 

@@ -5,7 +5,7 @@ from esphome.const import CONF_ID
 from esphome.components import sensor, web_server_base, update, select
 
 # Make sure web_server_base and update core are loaded
-AUTO_LOAD = ["web_server_base", "update"]
+AUTO_LOAD = ["web_server_base", "update", "json"]
 
 _BASE_DIR = os.path.dirname(__file__)
 _WEB_DIR = os.path.join(_BASE_DIR, 'web')

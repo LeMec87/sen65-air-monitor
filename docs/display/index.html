@@ -13,6 +13,8 @@
     figure { margin:0; }
     figcaption { margin-bottom:8px; }
     img { display:block; width:100%; max-width:416px; height:auto; image-rendering:pixelated; }
+    .weather-strip { margin-top:32px; }
+    .weather-strip img { max-width:840px; }
   </style>
 </head>
 <body>
@@ -27,6 +29,11 @@
       <figure><figcaption>Climate</figcaption><img src="climate.png" width="416" height="240" alt="Combined 24-hour graph for temperature and humidity"></figure>
       <figure><figcaption>Device Information</figcaption><img src="info.png" width="416" height="240" alt="Example hostname and masked IP address on separate lines, with two example QR codes"></figure>
     </div>
+    <figure class="weather-strip">
+      <figcaption>Weather icons · v0.3.0 · enlarged original firmware rendering</figcaption>
+      <img src="weather-icons.png" width="840" height="156" alt="Sunny, partly cloudy, cloudy, light rain, heavy rain, thunderstorm, and a crescent moon for clear nights">
+    </figure>
+    <p>Weather location is selectable in the device dashboard and saved across restarts. Rain and cloud icons remain visible at night; only clear nights show a moon. See the <a href="../weather.md">weather settings guide</a>.</p>
   </main>
 </body>
 </html>
