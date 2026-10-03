@@ -15,8 +15,8 @@ CAPS = string.ascii_uppercase + string.digits + " .,:-"
 
 # name, size(px), weight, chars, tabular digits
 FONTS = [
-    ("SG_Caps10", 10, 600, CAPS, False),                                   # scale labels
-    ("SG_Caps13", 13, 600, CAPS, False),                                   # date, metric labels
+    ("SG_Caps10", 10, 600, CAPS + "gm/+%\u00b5\u00b3\u00b0", False),       # scale labels and units
+    ("SG_Caps13", 13, 600, CAPS + "%", False),                             # date, metric labels
     ("SG_Sub13", 13, 500, "Particles good moderate high VOC\u00b7", False),  # status reason
     ("SG_Head18", 18, 600, CAPS + ":\u00b0%", True),                       # date, time, temp, rh
     ("SG_Value20", 20, 500, DIGITS, True),                                 # bottom values

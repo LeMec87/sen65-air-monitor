@@ -30,6 +30,25 @@ come directly from the firmware. In the public device-information preview,
 the IP address is masked, the hostname has no device-specific suffix, and
 the dashboard QR code uses an example hostname instead of the device's IP.
 The device itself still displays its real connection details.
+
+## History graphs (v0.3.5)
+
+All three graphs use three-pixel strokes with matching legend samples.
+Their horizontal axis is **TIME**, labeled **-24H**, **-12H** and **NOW**.
+Numeric value axes adjust to the available history:
+
+- **Particles:** PM1, PM2.5, PM4 and PM10 share the left-hand **µg/m³** scale.
+- **Gases:** **VOC INDEX** on the left and **NOX INDEX** on the right.
+- **Climate:** **TEMP °C** or **TEMP °F** on the left and **HUM %** on the right.
+
+Gas and climate series use independent scales; equal heights do not imply
+equal values. Exact overlaps can still hide another trace even with thicker
+lines. Sampling remains unchanged: every sensor update contributes to a
+five-minute averaged point. The history is held in RAM and resets on reboot.
+The graph previews show sample data, not a capture from the installed board.
+
+## Device information and startup
+
 From v0.3.1, both connected and offline Device Information use Space Grotesk
 with a 16-pixel outer inset, separate metadata rows and inset divider lines.
 The connected QR blocks are centered in equal columns; their white margins

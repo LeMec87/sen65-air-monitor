@@ -307,17 +307,30 @@ namespace air_monitor
       const char *suffix;
       bool one_decimal;
       uint8_t line_style;
+      uint8_t line_width = 1;
     };
 
     inline void draw_styled_history_segment(int x0, int y0, int x1, int y1,
-                                            uint8_t style, uint16_t segment)
+                                            uint8_t style, uint16_t segment,
+                                            uint8_t line_width = 1)
     {
       bool draw = style == 0;
       if (style == 1) draw = (segment % 8) < 5;
       if (style == 2) draw = (segment % 4) == 0;
       if (style == 3) draw = (segment % 12) < 5 || (segment % 12) == 8;
       if (draw)
-        display.drawLine(x0, y0, x1, y1, GxEPD_BLACK);
+      {
+        // Offset across the dominant axis so steep and flat strokes are bold.
+        const bool horizontal = std::abs(x1 - x0) >= std::abs(y1 - y0);
+        for (uint8_t stroke = 0; stroke < line_width; ++stroke)
+        {
+          const int offset = static_cast<int>(stroke) - line_width / 2;
+          display.drawLine(x0 + (horizontal ? 0 : offset),
+                           y0 + (horizontal ? offset : 0),
+                           x1 + (horizontal ? 0 : offset),
+                           y1 + (horizontal ? offset : 0), GxEPD_BLACK);
+        }
+      }
     }
 
     inline void history_bounds(HistoryMetric metric, float &min_value, float &max_value)
@@ -336,6 +349,67 @@ namespace air_monitor
       max_value += range * 0.12f;
     }
 
+    inline void history_plot_bounds(HistoryMetric metric, float &min_value, float &max_value)
+    {
+      history_bounds(metric, min_value, max_value);
+      // history_value() already applies the selected temperature unit.
+      if (metric != HISTORY_TEMP && min_value < 0.0f) min_value = 0.0f;
+      const float raw_step = (max_value - min_value) / 2.0f;
+      const float magnitude = std::pow(10.0f, std::floor(std::log10(raw_step)));
+      const float fraction = raw_step / magnitude;
+      const float step = magnitude * (fraction <= 1.0f ? 1.0f :
+                                     fraction <= 2.0f ? 2.0f :
+                                     fraction <= 5.0f ? 5.0f : 10.0f);
+      min_value = std::floor(min_value / step) * step;
+      max_value = std::ceil(max_value / step) * step;
+      if (max_value <= min_value) max_value = min_value + step;
+    }
+
+    inline void format_history_axis_tick(char *label, size_t label_size,
+                                         float value, float tick_step)
+    {
+      if (!std::isfinite(value))
+      {
+        snprintf(label, label_size, "--");
+        return;
+      }
+      // Keep nearby ticks distinct, including flat readings near 1000 ug/m3.
+      int decimals = tick_step < 0.1f ? 3 : tick_step < 1.0f ? 2 : tick_step < 10.0f ? 1 : 0;
+      // A shared range can put the middle tick on a half unit even at large spans.
+      if (decimals == 0 && std::fabs(value - std::round(value)) > 0.001f) decimals = 1;
+      const float quantum = decimals == 3 ? 0.001f : decimals == 2 ? 0.01f : decimals == 1 ? 0.1f : 1.0f;
+      if (std::fabs(value) < 0.5f * quantum) value = 0.0f;
+      snprintf(label, label_size, "%.*f", decimals, value);
+      if (decimals > 0)
+      {
+        size_t length = std::strlen(label);
+        while (length > 0 && label[length - 1] == '0') label[--length] = '\0';
+        if (length > 0 && label[length - 1] == '.') label[length - 1] = '\0';
+      }
+    }
+
+    inline void draw_history_axis_labels(float min_value, float max_value,
+                                         int x, int top, int bottom, bool right_axis)
+    {
+      for (int tick = 0; tick < 3; ++tick)
+      {
+        const float value = max_value - (max_value - min_value) * tick / 2.0f;
+        const int y = top + 2 + tick * (bottom - top - 4) / 2;
+        char label[20];
+        format_history_axis_tick(label, sizeof(label), value, (max_value - min_value) / 2.0f);
+        if (right_axis)
+        {
+          air_monitor_epaper_layout::print_left(display, x, y + 3, &SG_Caps10, label);
+          display.drawLine(x - 7, y, x - 4, y, GxEPD_BLACK);
+        }
+        else
+        {
+          air_monitor_epaper_layout::print_right(display, x, y + 3, &SG_Caps10, label);
+          display.drawLine(x + 4, y, x + 7, y, GxEPD_BLACK);
+        }
+      }
+    }
+
     inline void draw_history_legend_item(int x, int baseline_y,
                                          const HistorySeries &series)
     {
@@ -345,7 +419,9 @@ namespace air_monitor
         if (series.line_style == 1) ink = (i % 8) < 5;
         if (series.line_style == 2) ink = (i % 4) == 0;
         if (series.line_style == 3) ink = (i % 12) < 5 || (i % 12) == 8;
-        if (ink) display.drawPixel(x + i, baseline_y - 4, GxEPD_BLACK);
+        if (ink)
+          display.fillRect(x + i, baseline_y - 4 - series.line_width / 2,
+                           1, series.line_width, GxEPD_BLACK);
       }
 
       char text[32];
@@ -359,7 +435,9 @@ namespace air_monitor
 
     inline void draw_combined_history_chart(const HistorySeries *series,
                                             size_t series_count,
-                                            bool independent_scales)
+                                            bool independent_scales,
+                                            const char *left_axis_title,
+                                            const char *right_axis_title = nullptr)
     {
       const int legend_columns = series_count > 2 ? 2 : static_cast<int>(series_count);
       const int legend_rows = (series_count + legend_columns - 1) / legend_columns;
@@ -371,12 +449,16 @@ namespace air_monitor
         draw_history_legend_item(16 + column * legend_width, 60 + row * 20, series[i]);
       }
 
-      const int left = 16;
-      const int right = display.width() - 16;
-      const int top = legend_rows == 1 ? 76 : 94;
-      const int bottom = 218;
+      const int left = 54;
+      const int right = display.width() - (independent_scales ? 54 : 16);
+      const int top = legend_rows == 1 ? 85 : 105;
+      const int bottom = 207;
       const int width = right - left;
       const int height = bottom - top;
+
+      air_monitor_epaper_layout::print_left(display, left, top - 8, &SG_Caps10, left_axis_title);
+      if (right_axis_title != nullptr)
+        air_monitor_epaper_layout::print_right(display, right, top - 8, &SG_Caps10, right_axis_title);
 
       display.drawRect(left, top, width + 1, height + 1, GxEPD_BLACK);
       for (int row = 1; row < 4; ++row)
@@ -389,12 +471,16 @@ namespace air_monitor
         for (int y = top + 1; y < bottom; y += 10)
           display.drawLine(x, y, x, y + 4, GxEPD_BLACK);
 
-      air_monitor_epaper_layout::print_left(display, left, 236, &SG_Caps10, "-24H");
-      air_monitor_epaper_layout::print_centered(display, left + width / 2, 236, &SG_Caps10, "-12H");
-      air_monitor_epaper_layout::print_right(display, right, 236, &SG_Caps10, "NOW");
+      air_monitor_epaper_layout::print_left(display, left, 222, &SG_Caps10, "-24H");
+      air_monitor_epaper_layout::print_centered(display, left + width / 2, 222, &SG_Caps10, "-12H");
+      air_monitor_epaper_layout::print_right(display, right, 222, &SG_Caps10, "NOW");
+      air_monitor_epaper_layout::print_centered(display, left + width / 2, 238, &SG_Caps10, "TIME");
 
       if (g_history_count == 0)
       {
+        draw_history_axis_labels(NAN, NAN, left - 7, top, bottom, false);
+        if (independent_scales)
+          draw_history_axis_labels(NAN, NAN, right + 7, top, bottom, true);
         air_monitor_epaper_layout::print_centered(display, display.width() / 2,
                                                    top + height / 2 + 4,
                                                    &SG_Caps13, "WAITING FOR DATA");
@@ -405,14 +491,15 @@ namespace air_monitor
       float shared_max = 0.0f;
       if (!independent_scales)
       {
-        history_bounds(series[0].metric, shared_min, shared_max);
+        history_plot_bounds(series[0].metric, shared_min, shared_max);
         for (size_t s = 1; s < series_count; ++s)
         {
           float series_min, series_max;
-          history_bounds(series[s].metric, series_min, series_max);
+          history_plot_bounds(series[s].metric, series_min, series_max);
           if (series_min < shared_min) shared_min = series_min;
           if (series_max > shared_max) shared_max = series_max;
         }
+        draw_history_axis_labels(shared_min, shared_max, left - 7, top, bottom, false);
       }
 
       for (size_t s = 0; s < series_count; ++s)
@@ -420,7 +507,11 @@ namespace air_monitor
         float min_value = shared_min;
         float max_value = shared_max;
         if (independent_scales)
-          history_bounds(series[s].metric, min_value, max_value);
+        {
+          history_plot_bounds(series[s].metric, min_value, max_value);
+          draw_history_axis_labels(min_value, max_value, s == 0 ? left - 7 : right + 7,
+                                   top, bottom, s != 0);
+        }
         const float range = max_value - min_value;
         int previous_x = 0;
         int previous_y = 0;
@@ -431,7 +522,7 @@ namespace air_monitor
           const int py = bottom - 2 - static_cast<int>((value - min_value) * (height - 4) / range);
           if (i > 0)
             draw_styled_history_segment(previous_x, previous_y, px, py,
-                                        series[s].line_style, i);
+                                        series[s].line_style, i, series[s].line_width);
           previous_x = px;
           previous_y = py;
         }
@@ -497,12 +588,12 @@ namespace air_monitor
                    {
         draw_history_header("PARTICLES", "2 / 5");
         const HistorySeries series[] = {
-          {"PM1", HISTORY_PM1, g_pm1, "", true, 0},
-          {"PM2.5", HISTORY_PM25, g_pm25, "", true, 1},
-          {"PM4", HISTORY_PM4, g_pm4, "", true, 2},
-          {"PM10", HISTORY_PM10, g_pm10, "", true, 3}
+          {"PM1", HISTORY_PM1, g_pm1, "", true, 0, 3},
+          {"PM2.5", HISTORY_PM25, g_pm25, "", true, 1, 3},
+          {"PM4", HISTORY_PM4, g_pm4, "", true, 2, 3},
+          {"PM10", HISTORY_PM10, g_pm10, "", true, 3, 3}
         };
-        draw_combined_history_chart(series, 4, false); });
+        draw_combined_history_chart(series, 4, false, "\xB5g/m\xB3"); });
       g_last_normal_render_ms = millis();
     }
 
@@ -512,10 +603,10 @@ namespace air_monitor
                    {
         draw_history_header("GASES", "3 / 5");
         const HistorySeries series[] = {
-          {"VOC", HISTORY_VOC, g_voc, "", false, 0},
-          {"NOX", HISTORY_NOX, g_nox, "", false, 1}
+          {"VOC", HISTORY_VOC, g_voc, "", false, 0, 3},
+          {"NOX", HISTORY_NOX, g_nox, "", false, 1, 3}
         };
-        draw_combined_history_chart(series, 2, true); });
+        draw_combined_history_chart(series, 2, true, "VOC INDEX", "NOX INDEX"); });
       g_last_normal_render_ms = millis();
     }
 
@@ -526,10 +617,10 @@ namespace air_monitor
                    {
         draw_history_header("CLIMATE", "4 / 5");
         const HistorySeries series[] = {
-          {"TEMP", HISTORY_TEMP, shown_temp, g_use_f ? "F" : "C", true, 0},
-          {"HUM", HISTORY_RH, g_rh, "%", true, 1}
+          {"TEMP", HISTORY_TEMP, shown_temp, g_use_f ? "F" : "C", true, 0, 3},
+          {"HUM", HISTORY_RH, g_rh, "%", true, 1, 3}
         };
-        draw_combined_history_chart(series, 2, true); });
+        draw_combined_history_chart(series, 2, true, g_use_f ? "TEMP \xB0" "F" : "TEMP \xB0" "C", "HUM %"); });
       g_last_normal_render_ms = millis();
     }
 

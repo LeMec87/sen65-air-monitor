@@ -21,12 +21,13 @@
   <main>
     <h1>SEN65 Air Monitor – Display Layouts</h1>
     <p>Original firmware rendering at 416 × 240 pixels. The overview was captured from the device; the graphs show sample histories. Connection details are anonymized for this public preview.</p>
+    <p>Graph layouts from v0.3.5: three-pixel lines, numeric value scales and a labeled time axis. Particles share a µg/m³ scale; gases and climate use separate left/right scales. Equal heights on different axes do not mean equal values.</p>
     <div class="gallery">
       <figure><figcaption>Startup Animation</figcaption><img src="boot-animation.gif" width="416" height="240" alt="AIR MONITOR with four alternating loading bars"></figure>
       <figure><figcaption>Overview</figcaption><img src="overview.png" width="416" height="240" alt="Air quality status, PM2.5, VOC, weather, and additional readings"></figure>
-      <figure><figcaption>Particles</figcaption><img src="particles.png" width="416" height="240" alt="Combined 24-hour graph for PM1, PM2.5, PM4, and PM10"></figure>
-      <figure><figcaption>Gases</figcaption><img src="gases.png" width="416" height="240" alt="Combined 24-hour graph for VOC and NOx"></figure>
-      <figure><figcaption>Climate</figcaption><img src="climate.png" width="416" height="240" alt="Combined 24-hour graph for temperature and humidity"></figure>
+      <figure><figcaption>Particles · Shared µg/m³ scale</figcaption><img src="particles.png" width="416" height="240" alt="Thick-line 24-hour particle graph with numeric µg/m³ and time axes"></figure>
+      <figure><figcaption>Gases · VOC left / NOx right</figcaption><img src="gases.png" width="416" height="240" alt="Thick-line 24-hour gas graph with separate numeric VOC and NOx index scales"></figure>
+      <figure><figcaption>Climate · Temperature left / humidity right</figcaption><img src="climate.png" width="416" height="240" alt="Thick-line 24-hour climate graph with separate numeric temperature and humidity axes"></figure>
       <figure><figcaption>Device Information</figcaption><img src="info.png" width="416" height="240" alt="Example hostname and masked IP address on separate lines, with two example QR codes"></figure>
       <figure><figcaption>Device Information · Offline</figcaption><img src="info-offline.png" width="416" height="240" alt="Space Grotesk device information with public instructions QR and Wi-Fi setup steps"></figure>
     </div>

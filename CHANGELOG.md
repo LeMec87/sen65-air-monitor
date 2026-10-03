@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.3.5 - 2026-10-03
+
+- use three-pixel lines and matching legend samples on all e-paper history graphs
+- add numeric value scales, units and a time-axis title to every graph
+- give particles a shared µg/m³ scale, gases separate VOC/NOx index scales,
+  and climate separate temperature and humidity scales
+- keep temperature labels and plotted values consistent with Celsius/Fahrenheit
+- preserve negative temperatures, avoid negative particle/index scales, and
+  keep nearby tick labels distinct at zero, constant and high readings
+- refresh the native firmware-rendered graph previews and add axis regression tests
+- package matching v0.3.5 OTA/factory images, manifest and checksums
+
+Version 0.3.4 was a private particle-line test build, not a published release.
+The final release uses 0.3.5 so devices running that test can find it as an update.
+
 ## 0.3.3 - 2026-10-03
 
 - redesigned the local dashboard with dark glass panels and the approved blue,

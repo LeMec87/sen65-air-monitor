@@ -37,6 +37,7 @@ new files on GitHub never installs them automatically. See the
   thunderstorm and clear-night moon
 - full-width 24-hour charts for particles, gases and climate; every sensor
   update contributes to a five-minute averaged history point
+- three-pixel graph lines with numeric scales, units and time-axis labels (v0.3.5+)
 - low-flicker e-paper animation while the sensor starts
 - local web dashboard and `/api/state`
 - dark glass web interface with grouped readings and responsive navigation (v0.3.3+)
@@ -88,6 +89,12 @@ at the native 416×240 resolution. The overview is a device capture; graph
 histories are illustrative sample data, not recorded measurements.
 
 ![Display pages](docs/display/display-pages.png)
+
+From **v0.3.5**, all three history pages use thicker lines and labeled axes.
+Particles share a µg/m³ scale. Gases use VOC on the left and NOx on the right;
+climate uses temperature on the left and humidity on the right. Temperature
+follows the selected Celsius/Fahrenheit setting. Each value axis scales to its
+history, so heights on different axes are not directly comparable.
 
 The device-information page uses Space Grotesk, inset dividers and two aligned
 QR blocks. Hostname and IP address remain on separate lines. Public preview
@@ -163,6 +170,7 @@ c++ -std=c++17 tests/firmware_release_test.cpp -o /tmp/sen65-release-test
 /tmp/sen65-release-test
 python3 tests/release_manifest_test.py
 python3 tests/dashboard_assets_test.py
+python3 tests/history_axes_test.py
 ```
 
 First installation or recovery over USB:

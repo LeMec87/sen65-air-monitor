@@ -68,7 +68,7 @@ recovery uses the release's `factory` image at address `0x0` (not its OTA image)
 
 ```bash
 .venv/bin/esptool --chip esp32c3 --port /dev/cu.usbmodemXXXX \
-  write-flash 0x0 dist/sen65-air-monitor-v0.3.3-factory.bin
+  write-flash 0x0 dist/sen65-air-monitor-v0.3.5-factory.bin
 ```
 
 If an erase is necessary for recovery, use the erase-flash command in the
@@ -99,6 +99,22 @@ Queued successful check/install requests return HTTP 200 with `{"ok":true}`;
 this acknowledges acceptance, not completion. Poll `/api/state` for the result.
 Busy or disconnected checks return 409. Unsupported methods return 400 with
 `method_not_allowed` because the pinned ESP32 server supports a limited status set.
+
+## Validation of v0.3.5
+
+The release adds three-pixel lines and labeled axes to all e-paper history
+pages. Native renders use the actual firmware drawing functions and bitmap
+fonts. Scale regression tests cover Celsius/Fahrenheit conversion, negative
+temperatures, zero and constant readings, high particle values and tick-label
+precision. The overview and device-information renders remain unchanged.
+Weather mapping, version/download guards, dashboard assets, release checksums
+and the ESPHome 2026.8.2 build are checked before publication.
+
+Version 0.3.4 was a private test of the thicker particle lines. Version 0.3.5
+is newer so boards running that test can find the finished release through
+the normal dashboard update check. The final all-graph/axis changes have not
+yet been installed or verified on a physical panel. Publication does not
+restart a board; installation remains a separate, manual step.
 
 ![v0.3.3 dark glass Updates dashboard with simulated up-to-date state](updates-dashboard.png)
 
