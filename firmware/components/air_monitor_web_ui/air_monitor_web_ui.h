@@ -117,6 +117,20 @@ namespace air_monitor
       }
     }
 
+    bool verified_firmware_update_available() const {
+#ifdef ESPHOME_PROJECT_VERSION
+      return fw_update_ != nullptr &&
+          fw_update_->state == esphome::update::UPDATE_STATE_AVAILABLE &&
+          fw_update_error_.empty() &&
+          (fw_update_component_ == nullptr || !fw_update_component_->status_has_error()) &&
+          release::is_newer(fw_update_->update_info.latest_version, ESPHOME_PROJECT_VERSION) &&
+          release::valid_download(fw_update_->update_info.latest_version,
+                                  fw_update_->update_info.firmware_url, fw_update_->update_info.md5);
+#else
+      return false;
+#endif
+    }
+
     // AsyncWebHandler interface
     bool canHandle(AsyncWebServerRequest *request) const override
     {
@@ -368,8 +382,7 @@ namespace air_monitor
         root["update_configured"] = fw_update_ != nullptr;
         root["update_checking"] = fw_checking_;
         root["update_error"] = error;
-        root["has_update"] = newer && valid && error.empty() && !fw_checking_ &&
-            fw_update_->state == esphome::update::UPDATE_STATE_AVAILABLE;
+        root["has_update"] = !fw_checking_ && verified_firmware_update_available();
         root["latest_version"] = fw_update_ == nullptr ? "" : fw_update_->update_info.latest_version.c_str();
         root["update_state"] = state;
         root["update_progress"] = progress;

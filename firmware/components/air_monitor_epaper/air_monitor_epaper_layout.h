@@ -646,8 +646,22 @@ namespace air_monitor
     } // namespace status_layout
 
     template <typename Display>
+    inline void draw_update_available_icon(Display &display, int x, int y)
+    {
+      // A crisp 16-pixel download badge; no new font or periodic blinking.
+      display.fillRoundRect(x, y, 16, 16, 3, GxEPD_BLACK);
+      display.fillRect(x + 7, y + 3, 2, 7, GxEPD_WHITE);
+      display.drawLine(x + 4, y + 6, x + 7, y + 9, GxEPD_WHITE);
+      display.drawLine(x + 8, y + 9, x + 11, y + 6, GxEPD_WHITE);
+      display.drawLine(x + 4, y + 11, x + 4, y + 12, GxEPD_WHITE);
+      display.drawLine(x + 4, y + 12, x + 11, y + 12, GxEPD_WHITE);
+      display.drawLine(x + 11, y + 11, x + 11, y + 12, GxEPD_WHITE);
+    }
+
+    template <typename Display>
     inline void render_status_layout(Display &display, const Metrics &metrics, bool use_f,
-                                     const char *date_text, const char *time_text, int weather)
+                                     const char *date_text, const char *time_text, int weather,
+                                     bool update_available = false)
     {
       using namespace status_layout;
       static const char *const kWords[] = {"Good", "Moderate", "Poor"};
@@ -676,6 +690,14 @@ namespace air_monitor
         // Right-aligned climate group. This keeps its right edge stable when
         // temperature or humidity changes and leaves the clock beside the date.
         const float x_temp = R - total;
+        if (update_available) {
+          const float clock_end = L + date_width + 12.0f + advance_width(&SG_Head18, time_text);
+          // Preserve readable addresses/readings even on long dates or values.
+          if (x_temp - clock_end >= 28.0f)
+            draw_update_available_icon(display, static_cast<int>(std::lround((clock_end + x_temp) / 2)) - 8, 13);
+          else
+            draw_update_available_icon(display, 230, 53);
+        }
         const float x_rh = x_temp + wt + sep;
         print_text(display, x_temp, 28, &SG_Head18, buf);
         display.drawLine(static_cast<int>(std::lround(x_temp + wt + gap)), 15,

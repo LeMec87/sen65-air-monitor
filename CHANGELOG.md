@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.3.3 - 2026-10-03
+
+- redesigned the local dashboard with dark glass panels and the approved blue,
+  green, amber, orange and red palette
+- grouped all eight readings into indoor climate, airborne particles and gas
+  indices, with clearer labels and larger climate readings
+- added responsive navigation, keyboard focus, reduced-motion support and
+  a system-font fallback for Space Grotesk
+- show an explicit Offline state when sensor polling fails
+- added a small e-paper overview download badge when a newer firmware release
+  has valid manifest metadata; installation remains manual
+- added sample dashboard and native firmware-rendered update-icon previews
+- packaged matching v0.3.3 OTA/factory images, manifest and checksums
+
 ## 0.3.2 - 2026-10-02
 
 - fix manual update checks, installation acknowledgements and weather refresh

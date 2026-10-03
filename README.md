@@ -39,10 +39,26 @@ new files on GitHub never installs them automatically. See the
   update contributes to a five-minute averaged history point
 - low-flicker e-paper animation while the sensor starts
 - local web dashboard and `/api/state`
+- dark glass web interface with grouped readings and responsive navigation (v0.3.3+)
+- small e-paper overview indicator for an available newer firmware release (v0.3.3+)
 - checksum-checked GitHub updates with HTTPS certificate verification (v0.3.1+)
 - exact display capture at `/screen.pbm`
 - ESPHome/Home Assistant API
 - Wi-Fi onboarding through captive portal and Improv Serial/BLE
+
+## Web dashboard
+
+From **v0.3.3**, the local dashboard uses a dark glass design with blue, green,
+amber, orange and red accents. Environment shows all eight readings grouped
+into climate, particles and gas indices; Weather manages the outdoor location;
+Updates checks and installs firmware from this repository.
+
+![Dark glass dashboard with sample readings](docs/dashboard-overview.png)
+
+This is a browser preview with sample data, not a capture from an installed
+board. Card colors distinguish metric groups, not air-quality classifications.
+Space Grotesk falls back to a system font without internet access.
+See the [dashboard design and validation notes](docs/dashboard-design.md).
 
 ## Weather settings
 
@@ -81,6 +97,17 @@ connection details are anonymized; the board shows its real addresses.
 
 Individual display images and a local browser gallery are available in
 [docs/display](docs/display/README.md).
+
+In v0.3.3 and newer, the overview shows a small download symbol when a newer
+firmware release has valid manifest metadata. Checks do not install updates
+automatically. The symbol is only available after installing v0.3.3; older
+boards can still find the release through their existing dashboard updater.
+
+![Native firmware-rendered overview with update indicator](docs/display/overview-update.png)
+
+This indicator preview uses the firmware drawing functions and sample readings,
+with the update-available flag enabled. The other display previews above are
+unchanged; they do not show an available update.
 
 ## Hardware
 
@@ -135,6 +162,7 @@ c++ -std=c++17 tests/weather_test.cpp -o /tmp/sen65-weather-test
 c++ -std=c++17 tests/firmware_release_test.cpp -o /tmp/sen65-release-test
 /tmp/sen65-release-test
 python3 tests/release_manifest_test.py
+python3 tests/dashboard_assets_test.py
 ```
 
 First installation or recovery over USB:

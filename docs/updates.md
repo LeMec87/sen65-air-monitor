@@ -8,7 +8,8 @@ Uploading a release to GitHub does not upgrade a board by itself.
 ## Check and install
 
 1. Connect the board to Wi-Fi with internet access. Open its local dashboard.
-2. Select **Firmware & Updates**, then **Check for updates**.
+2. Select **Updates** (**Firmware & Updates** on older dashboards), then
+   **Check for updates**.
 3. When a newer version is available, press **Update to …** to install it.
 4. Keep power connected throughout installation. The board restarts when done;
    reload the dashboard and confirm the current version.
@@ -18,6 +19,12 @@ with network retries) and every six hours. Checks never install automatically.
 Wi-Fi and saved weather settings are retained by a normal OTA update; the
 RAM-only graph history starts over after the restart. Do not use factory reset
 or erase-flash for a routine update.
+
+From **v0.3.3**, an available newer release is also indicated by a small download
+symbol on the e-paper overview. The symbol requires a successful check with
+valid manifest metadata and clears on a normal redraw when no valid update
+remains available. It does not trigger installation. Boards on v0.3.2 can find
+and install v0.3.3 through the existing dashboard without this symbol.
 
 The board reads this project's [manifest](../dist/manifest.json) over HTTPS
 from GitHub's raw-file host. The manifest identifies an ESP32-C3 OTA image,
@@ -61,7 +68,7 @@ recovery uses the release's `factory` image at address `0x0` (not its OTA image)
 
 ```bash
 .venv/bin/esptool --chip esp32c3 --port /dev/cu.usbmodemXXXX \
-  write-flash 0x0 dist/sen65-air-monitor-v0.3.2-factory.bin
+  write-flash 0x0 dist/sen65-air-monitor-v0.3.3-factory.bin
 ```
 
 If an erase is necessary for recovery, use the erase-flash command in the
@@ -95,7 +102,20 @@ Busy or disconnected checks return 409. Unsupported methods return 400 with
 
 ![Live dashboard confirming firmware v0.3.2 and a successful GitHub check](updates-dashboard.jpg)
 
-## Validation of v0.3.2
+## Validation of v0.3.3
+
+The dark dashboard and overview indicator compile with ESPHome 2026.8.2.
+Version/download validation, weather mapping, HTTP response status and release
+packaging/checksum tests are run before publication. Browser previews use sample
+readings and simulated update controls; they are checked on desktop and at
+320-pixel mobile width. Native display renders compare the overview with and
+without the indicator using the actual firmware fonts, including wide readings.
+See [dashboard design and validation notes](dashboard-design.md) for the preview.
+
+This release has not yet been installed or tested on a physical board. Publishing
+it does not restart a device or reset its RAM-only graph history.
+
+## Hardware validation of v0.3.2
 
 Compilation and partition size checks, release metadata/checksum tests,
 version/URL validation tests, native display rendering and QR decoding, and

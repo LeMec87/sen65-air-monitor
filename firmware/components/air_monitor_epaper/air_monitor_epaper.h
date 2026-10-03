@@ -67,6 +67,7 @@ namespace air_monitor
     static bool s_inited = false;
     static DisplayMode g_display_mode = MODE_BOOT;
     static bool g_use_f = false;
+    static bool g_update_available = false;
     static uint8_t g_boot_full_refreshes = 0;
     static uint8_t g_boot_frame = 0;
     static int8_t g_last_info_wifi_state = -1;
@@ -485,7 +486,8 @@ namespace air_monitor
                    {
         air_monitor_epaper_layout::Metrics m = {g_co2, g_temp, g_rh, g_pm1, g_pm25, g_pm4, g_pm10, g_voc, g_nox};
         air_monitor_epaper_layout::render_status_layout(display, m, g_use_f,
-                                                  g_date_text.c_str(), g_time_text.c_str(), g_weather); });
+                                                  g_date_text.c_str(), g_time_text.c_str(), g_weather,
+                                                  g_update_available); });
       g_last_normal_render_ms = millis();
     }
 
@@ -854,7 +856,8 @@ namespace air_monitor
     }
 
     inline void tick_and_draw(float co2, float temp, float rh, float pm1, float pm25, float pm4, float pm10, float voc, float nox, bool use_f,
-                              const std::string &date_text, const std::string &time_text, int weather)
+                              const std::string &date_text, const std::string &time_text, int weather,
+                              bool update_available = false)
     {
       init_once();
       g_co2 = co2;
@@ -870,6 +873,7 @@ namespace air_monitor
       g_date_text = date_text;
       g_time_text = time_text;
       g_weather = weather;
+      g_update_available = update_available;
 
       unsigned long now = millis();
       sample_history(now);

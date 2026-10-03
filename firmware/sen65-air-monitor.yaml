@@ -1,5 +1,5 @@
 substitutions:
-  fw_version: "0.3.2"
+  fw_version: "0.3.3"
 
 esphome:
   name: sen65-air-monitor
@@ -339,5 +339,6 @@ interval:
             id(temp_unit_select).current_option() != "Celsius",
             date_text,
             time_text,
-            id(air_monitor_ui).weather_kind()
+            id(air_monitor_ui).weather_kind(),
+            id(air_monitor_ui).verified_firmware_update_available()
           );

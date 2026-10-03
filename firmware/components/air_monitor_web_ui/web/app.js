@@ -10,7 +10,10 @@
       btn.addEventListener('click', () => {
         const tab = btn.dataset.tab;
         // activate button
-        tabButtons.forEach(b => b.classList.toggle('tab-btn--active', b === btn));
+        tabButtons.forEach(b => {
+          b.classList.toggle('tab-btn--active', b === btn);
+          b.setAttribute('aria-pressed', String(b === btn));
+        });
         // show panel
         Object.entries(tabPanels).forEach(([key, panel]) => {
           panel.classList.toggle('tab-panel--active', key === tab);
@@ -42,7 +45,7 @@
     let updateChecking = false;
     let updateError = '';
     let updateCheckPending = false;
-    let currentTempUnit = 'F';
+    let currentTempUnit = 'C';
 
     function formatNumber(v, digits = 1) {
       if (v === null || v === undefined || Number.isNaN(v)) return '—';
@@ -53,6 +56,7 @@
       currentTempUnit = unit;
       unitButtons.forEach(btn => {
         btn.classList.toggle('unit-btn--active', btn.dataset.unit === unit);
+        btn.setAttribute('aria-pressed', String(btn.dataset.unit === unit));
       });
     }
 
@@ -78,7 +82,7 @@
     });
 
     function renderMetrics(data) {
-      const unit = (data.temp_unit === 'C' || data.temp_unit === 'F') ? data.temp_unit : 'F';
+      const unit = (data.temp_unit === 'C' || data.temp_unit === 'F') ? data.temp_unit : 'C';
       applyUnitToUI(unit);
 
       const tempRaw = data.temp;
@@ -87,25 +91,29 @@
         : null;
 
       const items = [
-        { label: 'Temp',      value: temp,        unit: '°' + unit, decimals: 1 },
-        { label: 'RH',        value: data.rh, unit: '%',        decimals: 1 },
-        { label: 'PM1.0',     value: data.pm1,    unit: 'µg/m³',    decimals: 1 },
+        { label: 'Temperature', value: temp, unit: '°' + unit, decimals: 1, group: 'Indoor climate', style: 'climate', caption: 'Your room temperature' },
+        { label: 'Humidity', value: data.rh, unit: '%', decimals: 1, group: 'Indoor climate', style: 'climate', caption: 'Relative humidity' },
+        { label: 'PM1.0',     value: data.pm1,    unit: 'µg/m³',    decimals: 1, group: 'Airborne particles' },
         { label: 'PM2.5',     value: data.pm25,   unit: 'µg/m³',    decimals: 1 },
         { label: 'PM4.0',     value: data.pm4,    unit: 'µg/m³',    decimals: 1 },
         { label: 'PM10',      value: data.pm10,   unit: 'µg/m³',    decimals: 1 },
-        { label: 'VOC Index', value: data.voc,    unit: '',         decimals: 0 },
-        { label: 'NOx Index', value: data.nox,    unit: '',         decimals: 0 }
+        { label: 'VOC index', value: data.voc, unit: '', decimals: 0, group: 'Gas indices', style: 'gas', caption: 'Volatile organic compounds' },
+        { label: 'NOx index', value: data.nox, unit: '', decimals: 0, style: 'gas', caption: 'Nitrogen oxides' }
       ];
 
+      let group = '';
       metricsEl.innerHTML = items.map(m => {
         const val = formatNumber(m.value, m.decimals);
+        const heading = m.group && m.group !== group ? `<div class="metric-group">${m.group}</div>` : '';
+        if (m.group) group = m.group;
         return `
-          <div class="metric">
+          ${heading}<div class="metric${m.style ? ' metric--' + m.style : ''}">
             <div class="metric-label">${m.label}</div>
             <div class="metric-main">
               <div class="metric-value">${val}</div>
               <div class="metric-unit">${m.unit}</div>
             </div>
+            ${m.caption ? '<div class="metric-caption">' + m.caption + '</div>' : ''}
           </div>
         `;
       }).join('');
@@ -242,8 +250,10 @@
         renderMetrics(json);
         renderFirmwareFromState(json);
         statusText.textContent = 'Live';
+        statusText.closest('.status-chip').dataset.state = 'live';
       } catch (e) {
-        statusText.textContent = 'Loading';
+        statusText.textContent = 'Offline';
+        statusText.closest('.status-chip').dataset.state = 'offline';
       }
     }
 
