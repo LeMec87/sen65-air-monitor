@@ -68,7 +68,7 @@ recovery uses the release's `factory` image at address `0x0` (not its OTA image)
 
 ```bash
 .venv/bin/esptool --chip esp32c3 --port /dev/cu.usbmodemXXXX \
-  write-flash 0x0 dist/sen65-air-monitor-v0.3.5-factory.bin
+  write-flash 0x0 dist/sen65-air-monitor-v0.3.6-factory.bin
 ```
 
 If an erase is necessary for recovery, use the erase-flash command in the
@@ -100,6 +100,29 @@ this acknowledges acceptance, not completion. Poll `/api/state` for the result.
 Busy or disconnected checks return 409. Unsupported methods return 400 with
 `method_not_allowed` because the pinned ESP32 server supports a limited status set.
 
+## Validation of v0.3.6
+
+This release adds interactive web History and optional Home Assistant discovery
+and setup. The inspector reads the existing five-minute RAM ring; helper tests
+cover averaging, ring order, uptime wrap, null/empty/single-point history, unit
+conversion and distinct constant-value tick labels. Browser checks cover trace
+toggles, plot/slider selection, category axes, empty history, Fahrenheit, HA
+status fixtures and the 320-pixel layout. English guides and all web screenshots
+are refreshed. Preview addresses and data are sanitized fixtures.
+
+The firmware compiles with pinned ESPHome 2026.8.2 and fits the existing OTA
+partition. Embedded web assets use deterministic build-time gzip. Packaging,
+image checksums, supported HTTP statuses and update/version guards are tested.
+Existing release images remain immutable. Retain a compatible older factory
+image for USB recovery if the new dashboard, HA discovery or boot behavior
+fails after a future installation; dashboard downgrades remain blocked.
+
+The new features have not been installed or verified on a physical board or
+real HA dashboard. Publication changes the GitHub update manifest only; it does
+not restart the board, reset history, pair HA or create a dashboard. Integration
+remains user-confirmed. HTTPS HA cannot directly embed the board's HTTP page.
+See [History](history.md) and [Home Assistant](home-assistant.md).
+
 ## Validation of v0.3.5
 
 The release adds three-pixel lines and labeled axes to all e-paper history
@@ -116,7 +139,7 @@ the normal dashboard update check. The final all-graph/axis changes have not
 yet been installed or verified on a physical panel. Publication does not
 restart a board; installation remains a separate, manual step.
 
-![v0.3.3 dark glass Updates dashboard with simulated up-to-date state](updates-dashboard.png)
+![v0.3.6 dark glass Updates dashboard with simulated up-to-date state](updates-dashboard.jpg)
 
 This is a browser preview of the current dark glass design, with simulated
 firmware versions and status. It is not a live board capture or proof that a

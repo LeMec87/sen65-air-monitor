@@ -1,11 +1,12 @@
 import os
+import gzip
 import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome.const import CONF_ID
 from esphome.components import sensor, web_server_base, update, select
 
 # Make sure web_server_base and update core are loaded
-AUTO_LOAD = ["web_server_base", "update", "json"]
+AUTO_LOAD = ["web_server_base", "update", "json", "mdns", "api"]
 
 _BASE_DIR = os.path.dirname(__file__)
 _WEB_DIR = os.path.join(_BASE_DIR, 'web')
@@ -22,8 +23,16 @@ def _generate_html_header():
 
     html = html.replace('<link rel="stylesheet" href="style.css">', f'<style>\n{css}\n</style>')
     html = html.replace('<script src="app.js"></script>', f'<script>\n{js}\n</script>')
+    for name in ('history.js', 'home-assistant.js'):
+        with open(os.path.join(_WEB_DIR, name), 'r') as f:
+            source = f.read()
+        html = html.replace(f'<script src="{name}"></script>', f'<script>\n{source}\n</script>')
 
-    header = f'static const char INDEX_HTML[] = R"HTML({html})HTML";\n'
+    # Serve pre-compressed bytes directly from flash. No runtime compression
+    # and no full HTML heap copy; browsers transparently decode gzip.
+    data = gzip.compress(html.encode('utf-8'), compresslevel=9, mtime=0)
+    rows = [', '.join(f'0x{b:02x}' for b in data[i:i + 20]) for i in range(0, len(data), 20)]
+    header = 'static const uint8_t INDEX_HTML_GZIP[] = {\n' + ',\n'.join(rows) + '\n};\n'
     with open(os.path.join(_BASE_DIR, 'air_monitor_web_ui_html.h'), 'w') as f:
         f.write(header)
 

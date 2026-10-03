@@ -23,11 +23,11 @@ public-IP location lookup. Manual mode skips this lookup and is useful when
 your ISP, VPN or mobile connection identifies the wrong city.
 
 The following screenshot is a **browser test preview with sample conditions**,
-not live weather or a screenshot from a flashed board. It shows the v0.3.3
+not live weather or a screenshot from a flashed board. It shows the v0.3.6
 dark glass design. Berlin is a fixture city, not the owner's location.
 Device-specific connection details are not shown.
 
-![v0.3.3 dark glass Weather dashboard with sample conditions](weather-dashboard.png)
+![v0.3.6 dark glass Weather dashboard with sample conditions](weather-dashboard.jpg)
 
 ## Refresh and status
 

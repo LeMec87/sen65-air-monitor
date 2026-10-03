@@ -2,6 +2,8 @@
     const tabButtons = document.querySelectorAll('.tab-btn');
     const tabPanels = {
       env: document.getElementById('tab-env'),
+      history: document.getElementById('tab-history'),
+      ha: document.getElementById('tab-ha'),
       weather: document.getElementById('tab-weather'),
       fw: document.getElementById('tab-fw')
     };
@@ -53,11 +55,13 @@
     }
 
     function applyUnitToUI(unit) {
+      const changed = currentTempUnit !== unit;
       currentTempUnit = unit;
       unitButtons.forEach(btn => {
         btn.classList.toggle('unit-btn--active', btn.dataset.unit === unit);
         btn.setAttribute('aria-pressed', String(btn.dataset.unit === unit));
       });
+      if (changed) document.dispatchEvent(new CustomEvent('monitor:unit', { detail: unit }));
     }
 
     unitButtons.forEach(btn => {

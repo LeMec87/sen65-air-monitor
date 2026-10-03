@@ -28,7 +28,9 @@
         <nav class="tab-buttons" aria-label="Dashboard sections">
           <span class="nav-caption">Your monitor</span>
           <button class="tab-btn tab-btn--active" id="nav-env" data-tab="env" aria-controls="tab-env" aria-pressed="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg><span>Environment</span></button>
+          <button class="tab-btn" id="nav-history" data-tab="history" aria-controls="tab-history" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M3 3v18h18M6 15l4-5 4 3 6-8"/></svg><span>History</span></button>
           <button class="tab-btn" id="nav-weather" data-tab="weather" aria-controls="tab-weather" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle cx="9" cy="9" r="4"/><path d="M9 1v1M1 9h1M3 3l1 1m10-1-1 1M7 19h12a4 4 0 0 0 0-8 5 5 0 0 0-9 2 3 3 0 0 0-3 6Z"/></svg><span>Weather</span></button>
+          <button class="tab-btn" id="nav-ha" data-tab="ha" aria-controls="tab-ha" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" aria-hidden="true"><path d="M3 10l9-7 9 7v11H3Z"/><path d="M9 21v-8h6v8"/></svg><span>Home Assistant</span><span id="ha-nav-dot" class="nav-dot" hidden aria-label="Home Assistant available"></span></button>
           <button class="tab-btn" id="nav-fw" data-tab="fw" aria-controls="tab-fw" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5"/></svg><span>Updates</span></button>
         </nav>
 
@@ -51,6 +53,45 @@
               <div class="chip-row">
                 <div class="chip" id="chip-last-updated">Last updated: —</div>
               </div>
+              <button type="button" id="ha-notice" class="ha-notice" hidden>Home Assistant detected · Set up</button>
+            </div>
+          </section>
+
+          <section class="tab-panel" id="tab-history" aria-labelledby="nav-history">
+            <div class="card history-card">
+              <div class="card-header">
+                <div><span class="eyebrow">Explore the last 24 hours</span><h2 class="card-title">Your air, over time.</h2><p class="card-subtitle">Hide a trace. Pick a moment. See the detail.</p></div>
+                <button type="button" class="fw-btn fw-btn--secondary" id="history-refresh">Refresh</button>
+              </div>
+              <div class="history-groups" role="group" aria-label="History category">
+                <button type="button" data-history-group="particles" aria-pressed="true">Particles</button>
+                <button type="button" data-history-group="gases" aria-pressed="false">Gases</button>
+                <button type="button" data-history-group="climate" aria-pressed="false">Climate</button>
+              </div>
+              <div id="history-legend" class="history-legend" role="group" aria-label="Visible graph traces"></div>
+              <p id="history-status" class="weather-message" role="status">Loading history…</p>
+              <div class="history-plot" id="history-plot"><svg id="history-svg" viewBox="0 0 800 320" role="img" aria-label="24-hour history graph"></svg></div>
+              <div class="history-picker"><label for="history-point">Inspect a recorded point</label><input type="range" id="history-point" min="0" max="0" value="0" step="1" disabled><button type="button" class="fw-btn fw-btn--secondary" id="history-latest">Latest point</button></div>
+              <div class="history-inspector"><div class="history-inspector-heading"><span>Selected moment</span><strong id="history-selected-time">No history yet</strong></div><div class="history-values" id="history-values" aria-live="polite"></div></div>
+              <p class="weather-detail">Tap or click the graph, or use the slider and arrow keys. Legend buttons hide traces without deleting data. Gas and climate axes use independent scales. Times use this browser’s timezone.</p>
+              <p class="weather-detail">Every sensor update contributes to a five-minute average. History is stored on the board, not in this browser, and starts again after a reboot.</p>
+            </div>
+          </section>
+
+          <section class="tab-panel" id="tab-ha" aria-labelledby="nav-ha">
+            <div class="card ha-card">
+              <div class="card-header"><div><span class="eyebrow">Connected, on your terms</span><h2 class="card-title">At home in Home Assistant.</h2><p class="card-subtitle">Local discovery. Optional integration. Your exact dashboard.</p></div><span class="fw-badge fw-badge--unknown" id="ha-status">Searching…</span></div>
+              <p class="weather-message" id="ha-message" role="status">Looking for Home Assistant on this network…</p>
+              <label class="weather-label" for="ha-instance">Discovered instances</label><select id="ha-instance" class="weather-input" disabled><option value="">No instance found yet</option></select>
+              <div class="fw-actions"><button type="button" class="fw-btn fw-btn--secondary" id="ha-scan">Search again</button><a id="ha-open" class="fw-btn fw-btn--secondary" href="https://my.home-assistant.io/" target="_blank" rel="noopener noreferrer">Open Home Assistant</a></div>
+              <form id="ha-manual-form"><label class="weather-label" for="ha-manual-url">Home Assistant URL (optional fallback)</label><div class="weather-search-row"><input id="ha-manual-url" class="weather-input" type="url" placeholder="http://homeassistant.local:8123" maxlength="230" autocomplete="off"><button class="fw-btn fw-btn--secondary" type="submit">Use address</button></div><p class="weather-detail">For blocked mDNS, custom hostnames or HTTPS. A manual address is not a discovery result or a verified connection.</p></form>
+              <ol class="ha-steps">
+                <li><h3>Connect the sensor entities</h3><p>Add the discovered SEN65 monitor under Home Assistant’s ESPHome integration. If needed, use the device host below and API port 6053. Confirm setup in Home Assistant; this page does not enrol devices or store HA tokens.</p><div class="ha-address"><code id="ha-device-host">Loading…</code><button type="button" class="fw-btn fw-btn--secondary" id="ha-copy-host">Copy host</button></div><div class="fw-actions"><a class="fw-btn" id="ha-integrate" href="https://my.home-assistant.io/redirect/config_flow_start/?domain=esphome" target="_blank" rel="noopener noreferrer">Add ESPHome integration</a></div></li>
+                <li><h3>Add your exact glass dashboard</h3><p>In Settings → Dashboards → Add dashboard, choose Webpage. Name it “SEN65 Air Monitor”, enable the sidebar entry, and paste this URL. It loads this board’s full interface, including History.</p><div class="ha-address"><code id="ha-device-url">Loading…</code><button type="button" class="fw-btn fw-btn--secondary" id="ha-copy-url">Copy dashboard URL</button></div><div class="fw-actions"><a class="fw-btn fw-btn--secondary" id="ha-dashboards" href="https://my.home-assistant.io/redirect/lovelace_dashboards/" target="_blank" rel="noopener noreferrer">Open dashboard settings</a><button type="button" class="fw-btn fw-btn--secondary" id="ha-download">Download dashboard YAML</button></div></li>
+              </ol>
+              <p class="ha-warning">HTTPS Home Assistant cannot embed this HTTP page directly. Use the direct dashboard link, or an appropriately secured HTTPS reverse proxy. Do not disable iframe protections or expose the board to the internet. The browser or Companion app must be able to reach the board locally or through a suitable VPN/proxy.</p>
+              <p class="weather-message" id="ha-action-status" role="status"></p>
+              <p class="weather-detail">Discovery checks mDNS once a minute. “API connected” means a client identifying itself as Home Assistant is currently connected, not that a dashboard has been created. A disconnected integration cannot be distinguished from one that was never configured.</p>
             </div>
           </section>
 
@@ -155,5 +196,7 @@
   </div>
 
   <script src="app.js"></script>
+  <script src="history.js"></script>
+  <script src="home-assistant.js"></script>
 </body>
 </html>

@@ -22,7 +22,7 @@ class DashboardParser(HTMLParser):
 class DashboardTests(unittest.TestCase):
     def setUp(self):
         self.html = (WEB / "index.html").read_text()
-        self.js = (WEB / "app.js").read_text()
+        self.js = "\n".join((WEB / name).read_text() for name in ("app.js", "history.js", "home-assistant.js"))
         self.css = (WEB / "style.css").read_text()
         self.elements = DashboardParser(self.html).elements
         self.ids = Counter(attrs["id"] for _, attrs in self.elements if "id" in attrs)
@@ -40,7 +40,7 @@ class DashboardTests(unittest.TestCase):
             if "aria-controls" in attrs:
                 self.assertIn(attrs["aria-controls"], self.ids)
         buttons = [attrs for tag, attrs in self.elements if tag == "button" and "data-tab" in attrs]
-        self.assertEqual({b["data-tab"] for b in buttons}, {"env", "weather", "fw"})
+        self.assertEqual({b["data-tab"] for b in buttons}, {"env", "history", "weather", "ha", "fw"})
         self.assertEqual(sum(b.get("aria-pressed") == "true" for b in buttons), 1)
         self.assertIn("Skip to content", self.html)
 

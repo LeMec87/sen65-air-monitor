@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.3.6 - 2026-10-03
+
+- add a web History inspector using the existing e-paper RAM samples: trace
+  toggles, plot/keyboard/slider selection, selected values and independent axes
+- expose one bounded history category per request with sample uptime metadata,
+  stale-data warnings and Celsius/Fahrenheit conversion in the browser
+- discover local IPv4 Home Assistant mDNS advertisements asynchronously and
+  distinguish discovery from a currently connected HA-identified API client
+- add optional ESPHome setup guidance and an exact embedded Webpage dashboard,
+  including YAML export, manual HA URL fallback and HTTPS/network limitations
+- compress embedded web assets at build time to keep the firmware within its
+  existing OTA partition; add fixture previews and regression tests
+
+- refresh all web-dashboard screenshots and package matching OTA/factory images,
+  manifest and checksums
+
+The release passes build and local regression/browser tests but has not been
+installed or tested on a physical board/HA instance. Publishing does not flash
+a board, enrol it in Home Assistant or create a dashboard automatically.
+
 ## 0.3.5 - 2026-10-03
 
 - use three-pixel lines and matching legend samples on all e-paper history graphs

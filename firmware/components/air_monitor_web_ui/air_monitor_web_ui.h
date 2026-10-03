@@ -12,6 +12,8 @@
 #include "weather_types.h"
 #include "firmware_release.h"
 #include "esphome/components/network/util.h"
+#include "home_assistant_discovery.h"
+#include "history_api.h"
 
 #include <string>
 #include <cmath>
@@ -53,6 +55,7 @@ namespace air_monitor
     void set_temp_unit_switch(Select *s) { temp_unit_select_ = s; }
     void set_on_check_update(std::function<void()> f) { on_check_update_ = f; }
     void set_on_weather_refresh(std::function<void()> f) { on_weather_refresh_ = f; }
+    void set_history_provider(std::function<std::string(const std::string &)> f) { history_provider_ = f; }
     float weather_latitude() const { return weather_settings_.manual ? weather_settings_.latitude : auto_lat_; }
     float weather_longitude() const { return weather_settings_.manual ? weather_settings_.longitude : auto_lon_; }
     int weather_kind() const { return weather_kind_; }
@@ -107,6 +110,7 @@ namespace air_monitor
     }
 
     void loop() override {
+      ha_.loop();
       if (!fw_checking_) return;
       if (fw_update_component_ != nullptr && fw_update_component_->status_has_error()) {
         fw_checking_ = false;
@@ -169,6 +173,38 @@ namespace air_monitor
       {
         handle_weather_(request);
       }
+      else if (url == "/api/history")
+      {
+        if (request->method() != HTTP_GET) {
+          request->send(400, "application/json", "{\"error\":\"method_not_allowed\"}");
+          return;
+        }
+        const std::string group = request->hasParam("group") ? request->getParam("group")->value() : "particles";
+        if (!history::group(group).keys) {
+          request->send(400, "application/json", "{\"error\":\"Invalid history group.\"}");
+          return;
+        }
+        if (!history_provider_) {
+          request->send(404, "application/json", "{\"error\":\"History is not configured.\"}");
+          return;
+        }
+        const auto body = history_provider_(group);
+        auto *response = request->beginResponse(200, "application/json", body);
+        response->addHeader("Cache-Control", "no-store");
+        request->send(response);
+      }
+      else if (url == "/api/home_assistant")
+      {
+        handle_home_assistant_(request);
+      }
+      else if (url == "/api/home_assistant/scan")
+      {
+        if (request->method() != HTTP_POST)
+          request->send(400, "application/json", "{\"error\":\"method_not_allowed\"}");
+        else if (!ha_.request_scan())
+          request->send(409, "application/json", "{\"error\":\"Wait for the current search or connect Wi-Fi before retrying.\"}");
+        else request->send(200, "application/json", "{\"ok\":true}");
+      }
       else if (url == "/api/weather/refresh")
       {
         if (request->method() != HTTP_POST) {
@@ -217,6 +253,41 @@ namespace air_monitor
     uint32_t weather_received_ms_{0}, weather_refresh_requested_ms_{0};
     bool weather_received_{false}, weather_refresh_requested_{false}, weather_fetching_{false};
     std::string weather_error_;
+    HomeAssistantDiscovery ha_;
+    std::function<std::string(const std::string &)> history_provider_;
+
+    void handle_home_assistant_(AsyncWebServerRequest *request) {
+      if (request->method() != HTTP_GET) {
+        request->send(400, "application/json", "{\"error\":\"method_not_allowed\"}");
+        return;
+      }
+      const auto status = ha_.snapshot();
+      const auto body = esphome::json::build_json([this, &status](JsonObject root) {
+        root["network_connected"] = esphome::network::is_connected();
+        root["scanning"] = status.scanning;
+        root["checked"] = status.checked;
+        root["api_connected"] = status.connected;
+        root["error"] = status.error;
+        root["device_host"] = esphome::App.get_name() + ".local";
+        root["api_port"] = 6053;
+        const auto ips = esphome::network::get_ip_addresses();
+        std::string address;
+        for (const auto &ip : ips) if (ip.is_set() && ip.is_ip4()) {
+          char text[esphome::network::IP_ADDRESS_BUFFER_SIZE];
+          address = ip.str_to(text); break;
+        }
+        root["device_url"] = address.empty() ? "" : "http://" + address + "/";
+        auto instances = root["instances"].to<JsonArray>();
+        for (const auto &instance : status.instances) {
+          auto item = instances.add<JsonObject>();
+          item["name"] = instance.name;
+          item["url"] = instance.url;
+        }
+      });
+      auto *response = request->beginResponse(200, "application/json", body);
+      response->addHeader("Cache-Control", "no-store");
+      request->send(response);
+    }
 
     void request_weather_refresh_() {
       weather_refresh_requested_ = true;
@@ -337,7 +408,10 @@ namespace air_monitor
 
     void handle_root_(AsyncWebServerRequest *request)
     {
-      request->send(200, "text/html", INDEX_HTML);
+      auto *response = request->beginResponse(200, "text/html; charset=utf-8", INDEX_HTML_GZIP, sizeof(INDEX_HTML_GZIP));
+      response->addHeader("Content-Encoding", "gzip");
+      response->addHeader("Cache-Control", "no-store");
+      request->send(response);
     }
 
     void handle_state_(AsyncWebServerRequest *request)

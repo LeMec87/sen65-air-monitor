@@ -33,6 +33,7 @@
 #include "SG_Status36.h"
 #include "SG_Info12.h"
 #include "air_monitor_epaper_layout.h"
+#include "esphome/components/air_monitor_web_ui/history_api.h"
 
 namespace air_monitor
 {
@@ -90,6 +91,7 @@ namespace air_monitor
     static int g_weather = -1;  // -1 unknown, 0 sun, 1 cloud, 2 rain, 3 moon
 
     // --- 24-hour history (5-minute samples, held in RAM) ---
+    static esphome::Mutex g_history_mutex;
     enum HistoryMetric
     {
       HISTORY_PM1,
@@ -104,6 +106,7 @@ namespace air_monitor
     };
     static constexpr size_t HISTORY_POINTS = 288;
     static float g_history[HISTORY_METRIC_COUNT][HISTORY_POINTS] = {};
+    static uint32_t g_history_sample_ms[HISTORY_POINTS] = {};
     static uint16_t g_history_head = 0;
     static uint16_t g_history_count = 0;
     static unsigned long g_last_history_sample_ms = 0;
@@ -249,6 +252,7 @@ namespace air_monitor
 
     inline void sample_history(unsigned long now)
     {
+      esphome::LockGuard lock(g_history_mutex);
       if (!all_metrics_ready())
         return;
 
@@ -260,6 +264,7 @@ namespace air_monitor
       {
         for (size_t metric = 0; metric < HISTORY_METRIC_COUNT; ++metric)
           g_history[metric][g_history_head] = values[metric];
+        g_history_sample_ms[g_history_head] = now;
         g_history_head = (g_history_head + 1) % HISTORY_POINTS;
         g_history_count = 1;
         g_last_history_sample_ms = now;
@@ -281,11 +286,22 @@ namespace air_monitor
         g_history_accumulator[metric] = 0.0f;
       }
 
+      g_history_sample_ms[g_history_head] = now;
       g_history_head = (g_history_head + 1) % HISTORY_POINTS;
       if (g_history_count < HISTORY_POINTS)
         ++g_history_count;
       g_history_accumulator_count = 0;
       g_last_history_sample_ms = now;
+    }
+
+    inline std::string history_json(const std::string &group)
+    {
+      esphome::LockGuard lock(g_history_mutex);
+      const uint16_t count = g_history_count;
+      const size_t oldest = (g_history_head + HISTORY_POINTS - count) % HISTORY_POINTS;
+      return air_monitor::history::json(group, static_cast<uint32_t>(millis()), count,
+        [oldest](unsigned i) { return g_history_sample_ms[(oldest + i) % HISTORY_POINTS]; },
+        [oldest](unsigned metric, unsigned i) { return g_history[metric][(oldest + i) % HISTORY_POINTS]; });
     }
 
     inline void draw_history_header(const char *title, const char *page)

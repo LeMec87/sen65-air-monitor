@@ -127,6 +127,37 @@ h1 { font-size: 19px; font-weight: 700; letter-spacing: -.6px; margin: 0; }
 .fw-btn:disabled { opacity: .5; cursor: not-allowed; box-shadow: none; }
 .fw-status-text { font-size: 12px; line-height: 1.7; margin: 18px 0; color: var(--muted); }
 .footer { display: flex; justify-content: space-between; gap: 14px; padding: 24px 4px 4px; color: var(--muted); font-size: 10px; line-height: 1.6; }
+.nav-dot { width: 6px; height: 6px; flex-shrink: 0; border-radius: 50%; background: var(--success); }
+.ha-notice { display: block; width: 100%; margin-top: 18px; padding: 14px; text-align: left; border: 1px solid #51b66655; border-radius: 14px; color: #b5efc3; background: #51b66612; font-size: 12px; }
+.history-card .card-header { align-items: flex-start; }
+.history-groups { display: flex; flex-wrap: wrap; gap: 6px; padding: 5px; border: 1px solid var(--line); border-radius: 16px; background: #ffffff0a; }
+.history-groups button { flex: 1; min-height: 44px; padding: 10px; border: 0; border-radius: 11px; background: transparent; color: var(--muted); font-size: 12px; }
+.history-groups button[aria-pressed="true"] { background: #2585d938; color: var(--ink); }
+.history-legend { display: flex; flex-wrap: wrap; gap: 8px; margin: 20px 0 10px; }
+.history-legend button { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 24px; color: var(--ink); background: #ffffff0f; font-size: 12px; }
+.history-legend button[aria-pressed="false"] { background: transparent; color: var(--muted); border-style: dashed; }
+.history-legend button[aria-pressed="false"] svg { opacity: .35; }
+.history-legend svg { width: 24px; height: 12px; }
+.history-plot { width: 100%; padding: 12px 0 0; border: 1px solid var(--line); border-radius: 18px; background: #0b111b70; overflow: hidden; }
+#history-svg { display: block; width: 100%; height: auto; min-height: 220px; cursor: crosshair; }
+.history-picker { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 18px 0; }
+.history-picker label { width: 100%; font-size: 12px; color: var(--muted); }
+.history-picker input { min-width: 80px; min-height: 44px; flex: 1; accent-color: var(--primary); cursor: pointer; }
+.history-inspector { padding: 18px; border: 1px solid var(--line); border-radius: 18px; background: #ffffff08; }
+.history-inspector-heading { display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; margin-bottom: 16px; font-size: 12px; color: var(--muted); }
+.history-inspector-heading strong { color: var(--ink); font-weight: 500; }
+.history-values { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.history-value { min-width: 0; border-left: 3px solid var(--trace); padding-left: 10px; }
+.history-value[data-hidden="true"] { border-left-style: dashed; opacity: .7; }
+.history-value span { display: block; font-size: 11px; color: var(--muted); }
+.history-value strong { display: block; font-size: 22px; font-weight: 500; margin-top: 5px; font-variant-numeric: tabular-nums; }
+.history-value small { font-size: 10px; color: var(--muted); }
+.ha-steps { padding-left: 22px; margin-top: 28px; }
+.ha-steps li { padding: 0 0 20px 8px; color: var(--muted); font-size: 12px; line-height: 1.7; }
+.ha-steps h3 { color: var(--ink); font-size: 17px; font-weight: 500; margin: 0; }
+.ha-address { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px; border: 1px solid var(--line); border-radius: 14px; background: #0b111b55; }
+.ha-address code { color: var(--ink); font-size: 12px; overflow-wrap: anywhere; }
+.ha-warning { padding: 16px; border: 1px solid #f28f1655; border-radius: 16px; background: #f28f1610; color: #ffd297; font-size: 12px; line-height: 1.7; }
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .card, .firmware-card, .tab-buttons { background: #142133; }
 }
@@ -136,7 +167,7 @@ h1 { font-size: 19px; font-weight: 700; letter-spacing: -.6px; margin: 0; }
 }
 @media (max-width: 760px) {
   .tabs { grid-template-columns: minmax(0, 1fr); gap: 18px; }
-  .tab-buttons { flex-direction: row; padding: 6px; border-radius: 20px; }
+  .tab-buttons { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); padding: 6px; border-radius: 20px; }
   .nav-caption { display: none; }
   .tab-btn { flex: 1; justify-content: center; text-align: center; padding: 10px; }
   .card, .firmware-card { padding: 24px; }
@@ -150,6 +181,12 @@ h1 { font-size: 19px; font-weight: 700; letter-spacing: -.6px; margin: 0; }
   .subtitle { font-size: 10px; }
   .status-chip { padding: 9px 12px; font-size: 11px; }
   .tab-btn { flex-direction: column; gap: 5px; font-size: 11px; padding: 9px 4px; }
+  .tab-buttons { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .history-card .card-header { flex-wrap: wrap; }
+  .history-card .card-header .fw-btn { padding: 10px 14px; }
+  .history-legend { gap: 6px; }
+  .history-legend button { padding: 10px; }
+  .ha-address { align-items: flex-start; flex-direction: column; }
   .card, .firmware-card { padding: 20px 16px; border-radius: 24px; }
   .card-header { align-items: flex-start; gap: 10px; }
   .card-title, .fw-title { font-size: 26px; letter-spacing: -1px; }

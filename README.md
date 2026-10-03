@@ -29,6 +29,10 @@ new files on GitHub never installs them automatically. See the
 
 ## Features
 
+The **v0.3.6** source and matching OTA/factory images are available in `dist/`.
+Install the release on a board to enable the History and Home Assistant tabs.
+Build and browser tests pass; these new features still need real-board/HA testing.
+
 - SEN65 readings: PM1, PM2.5, PM4, PM10, temperature, humidity, VOC and NOx
 - custom Space Grotesk e-paper dashboard
 - date, local time and current weather icon
@@ -45,6 +49,8 @@ new files on GitHub never installs them automatically. See the
 - checksum-checked GitHub updates with HTTPS certificate verification (v0.3.1+)
 - exact display capture at `/screen.pbm`
 - ESPHome/Home Assistant API
+- interactive web History: toggle traces and inspect recorded points (v0.3.6+)
+- local Home Assistant discovery and optional setup for an exact embedded dashboard (v0.3.6+)
 - Wi-Fi onboarding through captive portal and Improv Serial/BLE
 
 ## Web dashboard
@@ -54,12 +60,30 @@ amber, orange and red accents. Environment shows all eight readings grouped
 into climate, particles and gas indices; Weather manages the outdoor location;
 Updates checks and installs firmware from this repository.
 
-![Dark glass dashboard with sample readings](docs/dashboard-overview.png)
+![Dark glass dashboard with sample readings](docs/dashboard-overview.jpg)
 
 This is a browser preview with sample data, not a capture from an installed
 board. Card colors distinguish metric groups, not air-quality classifications.
 Space Grotesk falls back to a system font without internet access.
 See the [dashboard design and validation notes](docs/dashboard-design.md).
+
+From **v0.3.6**, the dashboard also includes **History** and **Home Assistant**. History
+uses the board's existing five-minute RAM samples, with legend toggles and
+click/slider inspection. Home Assistant reports local mDNS discovery separately
+from a current API connection, and offers user-confirmed ESPHome setup plus a
+dedicated Webpage dashboard embedding this exact interface. Nothing is paired
+automatically. HTTPS HA cannot directly embed the board's HTTP page.
+See [interactive history](docs/history.md) and [Home Assistant setup](docs/home-assistant.md).
+
+![Interactive History with a hidden trace and selected sample](docs/dashboard-history.jpg)
+
+![Optional Home Assistant setup with simulated local discovery](docs/dashboard-home-assistant.jpg)
+
+Both are sample-data previews, not proof of a board installation or HA pairing.
+
+For a safe sample-data preview, run `node tools/preview_dashboard.mjs` from
+the repository root and open `http://127.0.0.1:8768/`. It makes no requests to
+a real board or HA server. Preview query options are documented in the guides.
 
 ## Weather settings
 
@@ -171,7 +195,18 @@ c++ -std=c++17 tests/firmware_release_test.cpp -o /tmp/sen65-release-test
 python3 tests/release_manifest_test.py
 python3 tests/dashboard_assets_test.py
 python3 tests/history_axes_test.py
+node tests/dashboard_models_test.js
+python3 tests/web_bundle_test.py
+python3 tests/history_ring_test.py
+c++ -std=c++17 tests/history_integration_test.cpp -o /tmp/sen65-history-test
+/tmp/sen65-history-test
 ```
+
+On macOS, if the C++ compiler cannot find standard headers, add
+`-isystem "$(xcrun --show-sdk-path)/usr/include/c++/v1"` to the C++ commands.
+The release-manifest test intentionally requires the YAML version to match the
+published binaries; an unreleased version bump will fail that check until
+release packaging is performed. Do not overwrite an existing release binary.
 
 First installation or recovery over USB:
 

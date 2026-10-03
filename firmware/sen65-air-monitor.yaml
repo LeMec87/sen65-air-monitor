@@ -1,5 +1,5 @@
 substitutions:
-  fw_version: "0.3.5"
+  fw_version: "0.3.6"
 
 esphome:
   name: sen65-air-monitor
@@ -37,6 +37,9 @@ esphome:
     then:
       - lambda: |-
           id(air_monitor_ui).set_on_weather_refresh([]() { id(update_weather).execute(); });
+          id(air_monitor_ui).set_history_provider([](const std::string &group) {
+            return air_monitor::air_monitor_epaper::history_json(group);
+          });
       - delay: 10min # Duration the AP remains active for setup
       - if:
           condition:
