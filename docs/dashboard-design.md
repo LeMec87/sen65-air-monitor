@@ -6,6 +6,20 @@ install it on a device; this release has not yet been verified on hardware.
 
 ![Dark glass dashboard with sample readings](dashboard-overview.png)
 
+### Weather
+
+![Dark glass Weather dashboard with sample conditions](weather-dashboard.png)
+
+Berlin and the weather conditions are fixture data, not the owner's location
+or live weather. See the [weather guide](weather.md) for real-device settings.
+
+### Updates
+
+![Dark glass Updates dashboard with simulated v0.3.3 status](updates-dashboard.png)
+
+Firmware versions and update status in this preview are simulated; it is not
+proof of a physical-board installation. See the [update guide](updates.md).
+
 ## Visual direction
 
 - Dark neutral background (`#0B111B`) with soft blue, green and orange glows.

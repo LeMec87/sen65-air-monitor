@@ -100,7 +100,11 @@ this acknowledges acceptance, not completion. Poll `/api/state` for the result.
 Busy or disconnected checks return 409. Unsupported methods return 400 with
 `method_not_allowed` because the pinned ESP32 server supports a limited status set.
 
-![Live dashboard confirming firmware v0.3.2 and a successful GitHub check](updates-dashboard.jpg)
+![v0.3.3 dark glass Updates dashboard with simulated up-to-date state](updates-dashboard.png)
+
+This is a browser preview of the current dark glass design, with simulated
+firmware versions and status. It is not a live board capture or proof that a
+board has been upgraded. Device-specific connection details are not shown.
 
 ## Validation of v0.3.3
 
@@ -130,4 +134,4 @@ download path. The download completed, passed OTA integrity validation and
 restarted successfully. The installed board reported current/latest v0.3.2,
 completed a manual check without an HTTP error, retained Celsius, delivered
 all eight SEN65 readings and fetched live weather with no reported error.
-The screenshot above is from that board; no private IP or location is shown.
+This historical hardware test predates the v0.3.3 browser preview shown above.
