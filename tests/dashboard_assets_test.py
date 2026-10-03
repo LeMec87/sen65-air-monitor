@@ -42,6 +42,7 @@ class DashboardTests(unittest.TestCase):
         buttons = [attrs for tag, attrs in self.elements if tag == "button" and "data-tab" in attrs]
         self.assertEqual({b["data-tab"] for b in buttons}, {"env", "history", "weather", "ha", "fw"})
         self.assertEqual(sum(b.get("aria-pressed") == "true" for b in buttons), 1)
+        self.assertTrue(all(b.get("aria-label") for b in buttons))
         self.assertIn("Skip to content", self.html)
 
     def test_palette_and_fallbacks(self):
@@ -54,6 +55,36 @@ class DashboardTests(unittest.TestCase):
         self.assertIn("prefers-reduced-motion", css)
         self.assertIn("@supports not", css)
         self.assertIn("system-ui", css)
+
+    def test_mobile_navigation_is_one_evenly_aligned_row(self):
+        tablet = re.search(r"@media \(max-width: 760px\) \{(.*?)\n\}", self.css, re.S)[1]
+        narrow = re.search(r"@media \(max-width: 420px\) \{(.*?)\n\}", self.css, re.S)[1]
+        self.assertIn("repeat(5, minmax(0, 1fr))", tablet)
+        self.assertIn("gap: 4px", tablet)
+        self.assertIn("padding: 6px", tablet)
+        self.assertIn("min-width: 0", tablet)
+        self.assertIn("min-height: 56px", tablet)
+        self.assertIn("justify-content: center", tablet)
+        self.assertIn(".tab-btn .nav-dot { position: absolute", tablet)
+        self.assertIn(".tab-btn svg { width: 26px; height: 26px; }", tablet)
+        self.assertNotIn("grid-column:", tablet)
+        self.assertIn(".nav-label-mobile { display: none; }", self.css)
+        self.assertIn(".tab-btn > span:not(.nav-dot) { display: none; }", tablet)
+        buttons = {attrs["id"]: attrs for tag, attrs in self.elements if tag == "button" and "data-tab" in attrs}
+        self.assertEqual(buttons["nav-env"]["aria-label"], "Overview (Environment)")
+        self.assertEqual(buttons["nav-ha"]["aria-label"], "Home Assistant (HA)")
+        self.assertNotIn("@media (max-width: 600px)", self.css)
+        self.assertNotIn(".tab-buttons", narrow)  # Keep the compact stacked-icon layout.
+        self.assertNotIn(".tab-btn {", narrow)
+
+    def test_ha_setup_is_simple_with_optional_advanced_details(self):
+        self.assertIn('class="ha-setup"', self.html)
+        details = next(attrs for tag, attrs in self.elements if tag == "details" and attrs.get("class") == "ha-advanced")
+        self.assertNotIn("open", details)
+        self.assertIn("Install the HA integration", self.html)
+        self.assertIn("domain=sen65_air_monitor", self.html)
+        self.assertIn("Firmware alone cannot install the HA integration", self.html)
+        self.assertIn('id="ha-https-warning"', self.html)
 
 
 if __name__ == "__main__":

@@ -29,9 +29,10 @@ new files on GitHub never installs them automatically. See the
 
 ## Features
 
-The **v0.3.6** source and matching OTA/factory images are available in `dist/`.
-Install the release on a board to enable the History and Home Assistant tabs.
-Build and browser tests pass; these new features still need real-board/HA testing.
+The **v0.3.7** source and matching OTA/factory images are available in `dist/`.
+Install the release on a board for the compact mobile menu and simplified HA setup.
+The separate **HA integration v0.1.1** works with board firmware v0.3.6 or later.
+Build, backend and browser tests pass; real-board/HA installation testing remains.
 
 - SEN65 readings: PM1, PM2.5, PM4, PM10, temperature, humidity, VOC and NOx
 - custom Space Grotesk e-paper dashboard
@@ -50,7 +51,10 @@ Build and browser tests pass; these new features still need real-board/HA testin
 - exact display capture at `/screen.pbm`
 - ESPHome/Home Assistant API
 - interactive web History: toggle traces and inspect recorded points (v0.3.6+)
-- local Home Assistant discovery and optional setup for an exact embedded dashboard (v0.3.6+)
+- local Home Assistant discovery and optional integration setup
+- the exact dashboard through HA's authenticated connection, with automatic
+  sidebar registration and a multi-board selector (HA integration v0.1.1)
+- one-row icon-only mobile navigation (firmware v0.3.7 / HA integration v0.1.1)
 - Wi-Fi onboarding through captive portal and Improv Serial/BLE
 
 ## Web dashboard
@@ -67,23 +71,44 @@ board. Card colors distinguish metric groups, not air-quality classifications.
 Space Grotesk falls back to a system font without internet access.
 See the [dashboard design and validation notes](docs/dashboard-design.md).
 
-From **v0.3.6**, the dashboard also includes **History** and **Home Assistant**. History
-uses the board's existing five-minute RAM samples, with legend toggles and
-click/slider inspection. Home Assistant reports local mDNS discovery separately
-from a current API connection, and offers user-confirmed ESPHome setup plus a
-dedicated Webpage dashboard embedding this exact interface. Nothing is paired
-automatically. HTTPS HA cannot directly embed the board's HTTP page.
+From **v0.3.6**, the dashboard also includes **History** and **Home Assistant**.
+History uses the board's existing five-minute RAM samples, with legend toggles
+and click/slider inspection. From **v0.3.7**, HA setup is reduced to installing
+the integration once, then adding the monitor. Mobile navigation uses five
+aligned icons with accessible names; desktop navigation retains text labels.
 See [interactive history](docs/history.md) and [Home Assistant setup](docs/home-assistant.md).
+
+### Home Assistant: the same dashboard, no extra HTTPS address
+
+Install the `custom_components/sen65_air_monitor` integration, restart HA and
+add your monitor under **Settings → Devices & services**. The **SEN65 Air Monitor**
+sidebar panel appears automatically and supports multiple boards. The browser
+uses HA's authenticated connection; HA contacts the board on the LAN. No board
+subdomain, certificate or additional Cloudflare route is needed.
+
+Download the [HA v0.1.1 installation ZIP](dist/home-assistant/sen65-air-monitor-ha-v0.1.1.zip)
+or add this repository to HACS as an **Integration** custom repository.
+It is not in the default HACS catalogue. The first version is administrator-only
+because it includes device controls. Keep native ESPHome for sensor entities
+and automations. HA API tests use **2026.9.4** with mocked boards, not a real-user
+HA installation. See the [installation and security guide](docs/home-assistant.md).
+
+![Shared dashboard in the simulated HA panel](docs/dashboard-ha-panel.jpg)
+
+![Compact icon-only mobile panel](docs/dashboard-ha-panel-mobile.jpg)
 
 ![Interactive History with a hidden trace and selected sample](docs/dashboard-history.jpg)
 
-![Optional Home Assistant setup with simulated local discovery](docs/dashboard-home-assistant.jpg)
+![Simplified Home Assistant setup with simulated local discovery](docs/dashboard-home-assistant.jpg)
 
-Both are sample-data previews, not proof of a board installation or HA pairing.
+All screenshots use sample data, not proof of a real board installation or HA
+pairing. The panel fixture does not reproduce HA's outer sidebar or login.
 
 For a safe sample-data preview, run `node tools/preview_dashboard.mjs` from
 the repository root and open `http://127.0.0.1:8768/`. It makes no requests to
 a real board or HA server. Preview query options are documented in the guides.
+To preview the panel too, run `node tools/preview_ha_panel.mjs 8769` in another
+terminal and open `http://127.0.0.1:8769/`.
 
 ## Weather settings
 

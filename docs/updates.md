@@ -68,7 +68,7 @@ recovery uses the release's `factory` image at address `0x0` (not its OTA image)
 
 ```bash
 .venv/bin/esptool --chip esp32c3 --port /dev/cu.usbmodemXXXX \
-  write-flash 0x0 dist/sen65-air-monitor-v0.3.6-factory.bin
+  write-flash 0x0 dist/sen65-air-monitor-v0.3.7-factory.bin
 ```
 
 If an erase is necessary for recovery, use the erase-flash command in the
@@ -99,6 +99,30 @@ Queued successful check/install requests return HTTP 200 with `{"ok":true}`;
 this acknowledges acceptance, not completion. Poll `/api/state` for the result.
 Busy or disconnected checks return 409. Unsupported methods return 400 with
 `method_not_allowed` because the pinned ESP32 server supports a limited status set.
+
+## Validation of firmware v0.3.7 and HA integration v0.1.1
+
+Firmware v0.3.7 contains the one-row icon-only mobile menu and simplified HA
+installation guide. Matching immutable images and this project's manifest are
+published together. The hardware driver/profile is unchanged by this release.
+
+The separate HA v0.1.1 package reuses the dashboard through HA's authenticated
+backend. Its tests cover HA registration and configuration-flow APIs, discovery,
+reconfiguration, admin permissions, offline errors, LAN request allowlists,
+response bounds, redirects, shared assets and frame/board-switching guards.
+Browser fixtures cover room switching, History trace toggles and 320-pixel
+navigation without horizontal overflow. Screenshots are sample-data previews.
+
+Install the HA package separately using the [HA guide](home-assistant.md).
+Installing board firmware alone cannot install a custom integration in HA.
+This release is not yet validated in a real HA installation or on a physical
+board. Publication does not restart or install anything on either system.
+
+For rollback, back up your HA configuration before installation. Remove the
+SEN65 integration entries and its custom component, then restart HA; retain
+native ESPHome entries. Restore a backed-up component for an integration
+upgrade rollback. For board rollback, use an older compatible factory image
+over USB; dashboard downgrades remain blocked.
 
 ## Validation of v0.3.6
 
@@ -139,7 +163,7 @@ the normal dashboard update check. The final all-graph/axis changes have not
 yet been installed or verified on a physical panel. Publication does not
 restart a board; installation remains a separate, manual step.
 
-![v0.3.6 dark glass Updates dashboard with simulated up-to-date state](updates-dashboard.jpg)
+![v0.3.7 dark glass Updates dashboard with simulated up-to-date state](updates-dashboard.jpg)
 
 This is a browser preview of the current dark glass design, with simulated
 firmware versions and status. It is not a live board capture or proof that a

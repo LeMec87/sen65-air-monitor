@@ -1,114 +1,170 @@
-# Home Assistant: discovery and exact dashboard
+# Home Assistant: the exact dashboard, without a separate HTTPS address
 
-Available from **v0.3.6**. No automatic enrolment occurs.
-The board's existing ESPHome API provides sensor entities; the new dashboard
-tab reports discovery and guides optional setup. This feature requires a
-matching firmware build on the board; v0.3.5 and earlier do not include it.
+The custom **SEN65 Air Monitor** integration serves the same dashboard through
+Home Assistant. After adding a board, an **SEN65 Air Monitor** sidebar panel is
+registered automatically. It includes Environment, interactive 24-hour History,
+Weather and Firmware & Updates. Multiple boards share one panel with a selector.
 
-![Home Assistant setup with simulated discovery](dashboard-home-assistant.jpg)
+```text
+Browser / Companion app → HA login + HTTPS/WebSocket → HA backend → LAN board
+```
 
-This is a browser fixture, not a real HA pairing or board-discovery result.
+No board subdomain, Cloudflare route, certificate, mixed-content exception or
+Webpage dashboard configuration is needed. Remote access uses the existing HA
+connection; HA, not the remote browser, must be able to reach the board.
 
-## Detection is not pairing
+## Status and requirements
 
-When Wi-Fi is connected, the board queries `_home-assistant._tcp.local.` via
-mDNS once a minute. A three-second asynchronous search does not block the
-sensor/display loop. **Search again** requests another search, subject to a
-ten-second cooldown. Up to four IPv4 instances are listed. A discovery notice
-also appears on Environment and in navigation.
+- Integration version: **0.1.1, initial public release**. Available from this
+  repository, but not included in the default HACS catalogue.
+- Tested API compatibility: **Home Assistant 2026.9.4**, Python 3.14. Earlier
+  HA versions are not currently declared supported.
+- Board firmware **v0.3.6 or later**, with `/api/state`, `/api/history`,
+  `/api/weather` and `/api/home_assistant`.
+- An HA administrator account. The first version deliberately restricts both
+  panel access and every backend command to administrators, because the shared
+  interface can change settings and install firmware.
+- HA can reach the configured board on its private LAN. IPv4 RFC1918 addresses
+  and IPv6 ULA addresses are accepted; loopback, public and link-local targets
+  are rejected. Hostnames must resolve exclusively to accepted LAN addresses.
 
-- **Detected**: a Home Assistant mDNS advertisement was found. This does not
-  mean that the monitor was added to HA or that its URL is reachable.
-- **API connected**: a current, setup-complete ESPHome API client identifies
-  itself as Home Assistant. This is a connection indicator, not authentication
-  proof, a configuration registry check, or proof that a dashboard exists.
-- **Not found**: no advertisement was found. HA can still exist on this network.
-- **Wi-Fi disconnected / Unavailable**: discovery cannot currently be used.
+This is a dashboard integration, not a replacement for native ESPHome sensor
+entities. Keep or add the ordinary ESPHome integration for automations and HA
+Recorder history. The shared graph still displays the board's RAM-only history;
+it resets after reboot and uses five-minute averages of sensor updates.
 
-HA must advertise Zeroconf and multicast must reach the board. VLAN isolation,
-guest Wi-Fi and some container/network configurations can prevent detection
-even on the same routed network. The current detector requires IPv4; IPv6-only
-instances are not listed. **Home Assistant URL** offers an optional, browser-only
-manual fallback. It is neither verified nor reported as automatic detection.
+The shared dashboard is adapted from Aether by Enrique Neyra / Syntropy Labs.
+The project remains under **CC BY-NC-SA 4.0**, including NonCommercial and
+ShareAlike conditions; public availability does not grant commercial use.
+See [attribution and changes](../NOTICE.md) and the [license](../LICENSE).
 
-Advertisements are untrusted. Only HTTP(S) links matching the discovered IPv4
-address or exact advertised `.local` hostname/port are used automatically.
-Custom `internal_url` aliases, external URLs or reverse-proxy ports may therefore
-require the manual URL field. No advertised URL is fetched by the board.
-The manual field accepts HTTP(S) without embedded credentials and keeps only
-the origin. It is not saved on the board and clears when the page reloads.
+## Installation
 
-## 1. Add the sensor entities (optional)
+### Manual installation
 
-1. Open **Home Assistant** in the device dashboard.
-2. Use **Copy host** and **Add ESPHome integration**, or go to HA's
-   **Settings → Devices & services** and select the discovered ESPHome device.
-3. Confirm the ESPHome configuration in HA. If asked, enter the monitor's host
-   (or its LAN IP) and API port **6053**. An installation with API encryption
-   must also provide its existing encryption key in HA.
+1. Copy **only** `custom_components/sen65_air_monitor` into your HA configuration
+   directory's `custom_components` folder. The resulting path must be
+   `/config/custom_components/sen65_air_monitor/manifest.json` on HA OS.
+   For HA Container, use its mounted configuration directory.
+2. Restart Home Assistant.
+3. Select **Settings → Devices & services → Add integration → SEN65 Air Monitor**.
+4. Enter the board's local address (for example `sen65-air-monitor-example.local`)
+   and a room name. Confirm setup.
+5. Open **SEN65 Air Monitor** in the HA sidebar. No second dashboard-creation step
+   is needed. Add another integration entry for each additional board.
 
-The button opens the official My Home Assistant setup redirect. If that
-redirect is not configured for your instance, use HA's settings directly.
-No HA tokens are requested or stored in the monitor, and this page does not
-call HA's configuration API or silently create an integration. Reuse an
-existing integration instead of adding a duplicate. This firmware currently
-uses the existing, unencrypted native API configuration; keep it on a trusted
-LAN/VPN. This update does not weaken or remove any security setting.
+For a packaged install, download the [v0.1.1 installation ZIP](../dist/home-assistant/sen65-air-monitor-ha-v0.1.1.zip)
+and extract it into the HA
+configuration directory; it already contains the `custom_components` structure.
+Back up an existing installation first. Do not extract the entire project or
+replace other custom integrations. Removing this integration entry removes the
+panel when the last board is removed; it does not reset the board or ESPHome.
 
-## 2. Add the exact web interface as its own HA dashboard
+### HACS custom repository
 
-1. Copy **dashboard URL** from the monitor's Home Assistant tab.
-2. In HA choose **Settings → Dashboards → Add dashboard → Webpage**.
-3. Enter **SEN65 Air Monitor**, enable its sidebar entry, and paste the URL.
-4. Save and open the new dashboard.
+The repository contains one integration and a `hacs.json` for custom-repository
+installation. Add
+`https://github.com/LeMec87/sen65-air-monitor` to HACS as an **Integration** custom
+repository, download it, restart HA, then follow steps 3–5 above. This is not a
+claim of HACS catalogue inclusion or an official HA built-in integration.
 
-The page is embedded directly from the board. It retains the exact dark glass
-design, all tabs, interactive History and the board's existing controls. It is
-not a reproduction using native HA cards. Sensor integration and embedding
-are independent: an embedded page alone does not create sensor entities.
+## Discovery, offline boards and address changes
 
-For manual configuration, **Download dashboard YAML** provides an iframe view
-for a **new, dedicated** dashboard. A sanitized template is in
-[home_assistant/dashboard.yaml](../home_assistant/dashboard.yaml). Replace the
-example host with the actual board URL. Do not paste it over an existing
-dashboard's configuration. If a browser blocks the download, use this template.
-`panel_iframe` is not used; use the current Webpage dashboard or iframe card.
+The integration can offer an mDNS-discovered `sen65-air-monitor*` ESPHome device
+for confirmation after the integration has been installed. Discovery does not
+silently add a device or redirect an existing entry. Manual address entry works
+when multicast is blocked. Discovered native API port 6053 is not used for the
+dashboard; its HTTP endpoint is on port 80.
 
-### HTTPS and remote access
+Setup checks the expected API and uses the board's reported `.local` host as its
+stable identity. A renamed board may need to be removed and added again. After
+a DHCP address change, use the integration entry's **Reconfigure** action and
+enter the new address of the same board. A DHCP reservation is recommended.
 
-An HTTPS HA page **cannot embed the board's HTTP page directly**: the browser
-blocks mixed content. Use the direct board URL separately, or configure an
-appropriately secured HTTPS reverse proxy and use that HTTPS URL for the
-embedded dashboard. Do not disable iframe protections, bypass certificate
-warnings or expose the bare board/API to the Internet.
+Offline boards retry during HA setup. A board that goes offline later remains
+in the selector and its dashboard reports Offline; readings are not invented.
+Use the panel's retry button if no configured board is available after startup.
 
-Embedding does not proxy network traffic through HA. The browser or Companion
-app must resolve and reach the board URL. Remote HA access alone does not grant
-remote access to the board; use a suitable VPN or secure proxy. `.local` name
-resolution also varies by client, so a reserved LAN IP may work better locally.
-Changing the board's DHCP address requires updating an IP-based embed URL.
+## Security and transport
 
-## Local status API
+Only the shared frontend's static code is publicly served by HA. It contains no
+board data, private addresses or tokens. Data/control commands use HA's existing
+authenticated WebSocket connection and enforce administrator access server-side.
+No long-lived access token is requested, stored or passed into the dashboard.
 
-`GET /api/home_assistant` reports `network_connected`, `scanning`, `checked`,
-`api_connected`, `error`, `instances` (`name`, safe `url`), `device_host`,
-`device_url` and `api_port`. It contains no HA credentials.
-`POST /api/home_assistant/scan` queues discovery with HTTP 200, or returns 409
-when offline, busy or within the cooldown. It does not pair any device.
+The frame bridge validates origin, source window, entry and a per-frame session
+identifier. Switching boards drops stale replies. The backend accepts only
+configured entry IDs and a fixed allowlist of API methods, paths and parameters.
+It is not a generic URL proxy. Hostnames are resolved and validated for every
+uncached request, requests are pinned to a private IP, redirects are rejected,
+JSON responses are size-limited, and timeouts bound network operations.
 
-## Validation and limitations
+The LAN connection to the existing board is normally HTTP; the browser-to-HA
+connection retains whatever HTTPS/authentication HA already uses. This does not
+add authentication to the board's standalone LAN server. Keep that server and
+the native ESPHome API on a trusted LAN/VPN and never publish them directly.
+The city-search feature continues to contact Open-Meteo from the browser over
+HTTPS, as it does in the standalone dashboard.
 
-The firmware builds for ESP32-C3. Pure helper tests cover safe advertised URLs,
-client-name classification, history serialization and web assets. Browser
-fixtures exercise detected/connected/not-found states, legend controls, point
-selection and responsive navigation without changing a real HA server.
-`?ha=connected` and `?ha=none` select those preview states.
+## Shared assets, packaging and validation
 
-Real-board discovery, pairing and iframe operation in the user's HA instance
-still require an installed test build and user-confirmed HA setup. A computer
-finding HA's mDNS advertisement is not proof that the board can see it.
+### Local visual preview
 
-Official references: [HA Zeroconf](https://www.home-assistant.io/integrations/zeroconf/),
-[ESPHome integration](https://www.home-assistant.io/integrations/esphome/),
-[Webpage dashboards](https://www.home-assistant.io/dashboards/dashboards/) and
-[iframe card and HTTPS restriction](https://www.home-assistant.io/dashboards/iframe/).
+The following fixture runs the actual panel and shared frontend with simulated
+HA commands and sample boards, not a real HA installation:
+
+```sh
+node tools/preview_dashboard.mjs 8768
+# In a second terminal:
+node tools/preview_ha_panel.mjs 8769
+```
+
+Open `http://127.0.0.1:8769/`. The room selector, history inspector and mobile
+icon-only navigation can be tested without contacting or changing a real board.
+
+![Simulated Home Assistant panel with shared dashboard](dashboard-ha-panel.jpg)
+
+Sample data only. This fixture does not reproduce HA login or its outer sidebar;
+those still require validation in a real HA installation.
+
+![The same panel with compact mobile navigation](dashboard-ha-panel-mobile.jpg)
+
+### Build the installable package
+
+The board's web files are the source of truth. Before packaging either version:
+
+```sh
+python3 tools/sync_ha_frontend.py
+python3 tools/sync_ha_frontend.py --check
+python3 tools/package_ha_integration.py
+```
+
+HA assets are included inside the integration so installation does not depend
+on an external checkout or runtime download. Packaging is deterministic, excludes
+Python caches and refuses to replace a different package under an existing
+version. Bump the HA manifest version before publishing changed package bytes.
+HA integration updates and board firmware updates are separate operations.
+
+Tests cover real HA registration/config-flow/WebSocket APIs, access restrictions,
+board identity, request allowlists, LAN resolution, redirects, payload limits,
+cache invalidation, frontend transport and shared-asset consistency. Tests use
+mocked LAN responses; installing and testing in a user's real HA instance is
+still a separate user-authorized step, not an outcome claimed by these tests.
+
+## Standalone dashboard and legacy embedding
+
+The board dashboard still discovers HA with mDNS and guides installation. Native
+ESPHome connectivity is not proof that the custom dashboard integration is
+installed. In HA panel mode the setup instructions are replaced by an installed
+panel notice; no further HTTPS setup is suggested.
+
+The older Webpage/iframe method remains optional under Advanced options.
+Unlike the integration, it still needs an HTTPS board/proxy address if HA is
+opened through HTTPS. Its YAML is only for a new dedicated dashboard, never a
+replacement for existing configuration.
+
+Official references: [custom HA panels](https://developers.home-assistant.io/docs/frontend/custom-ui/creating-custom-panels/),
+[WebSocket extensions](https://developers.home-assistant.io/docs/frontend/extending/websocket-api/),
+[configuration flows](https://developers.home-assistant.io/docs/core/integration/config_flow/),
+[HACS integration structure](https://www.hacs.dev/docs/publish/integration/) and
+[legacy iframe HTTPS restriction](https://www.home-assistant.io/dashboards/iframe/).

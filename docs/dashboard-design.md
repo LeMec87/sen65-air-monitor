@@ -1,11 +1,19 @@
-# Dark glass dashboard — v0.3.6
+# Dark glass dashboard — firmware v0.3.7 / HA v0.1.1
 
-The dark glass design was introduced in v0.3.3. These updated v0.3.6 screenshots
-include the History inspector and optional Home Assistant setup. They use sample
+The dark glass design was introduced in v0.3.3. These current screenshots
+include the History inspector, simplified Home Assistant setup and shared HA
+panel. They use sample
 readings and simulated controls, not an installed board. Publishing a release
 does not install it on a device; these additions have not been verified on hardware.
 
 ![Dark glass dashboard with sample readings](dashboard-overview.jpg)
+
+### Mobile
+
+![Compact mobile dashboard with five aligned navigation icons](dashboard-mobile.jpg)
+
+The mobile menu omits visual labels but keeps accessible button names. All five
+56-pixel targets remain on one row without overlap or horizontal overflow.
 
 ### Weather
 
@@ -16,7 +24,7 @@ or live weather. See the [weather guide](weather.md) for real-device settings.
 
 ### Updates
 
-![Dark glass Updates dashboard with simulated v0.3.6 status](updates-dashboard.jpg)
+![Dark glass Updates dashboard with simulated v0.3.7 status](updates-dashboard.jpg)
 
 Firmware versions and update status in this preview are simulated; it is not
 proof of a physical-board installation. See the [update guide](updates.md).
@@ -31,11 +39,20 @@ The real page reads the board's existing RAM history. See [History](history.md).
 
 ### Home Assistant
 
-![Optional Home Assistant setup with simulated discovery](dashboard-home-assistant.jpg)
+![Simplified Home Assistant setup with simulated discovery](dashboard-home-assistant.jpg)
 
 “Detected” is simulated in this screenshot. It is not proof of a real discovery,
 integration or embedded HA dashboard. See [Home Assistant setup](home-assistant.md)
-for optional pairing, embedding and the HTTP/HTTPS limitation.
+for installation, administrator access and HA's authenticated transport.
+
+![Shared dashboard in the simulated HA panel](dashboard-ha-panel.jpg)
+
+![Five aligned icons in the mobile HA panel](dashboard-ha-panel-mobile.jpg)
+
+The panel previews use simulated HA commands and sample boards. Real HA serves
+the same dashboard through its authenticated connection and registers a sidebar
+panel. No separate board HTTPS address is needed. HA installation remains a
+separate validation step; the fixture is not a full HA frontend.
 
 ## Visual direction
 
@@ -50,7 +67,9 @@ for optional pairing, embedding and the HTTP/HTTPS limitation.
 - Space Grotesk with a system-font fallback when Google Fonts is unavailable.
 - Light text and controlled color accents; English labels throughout.
 - Readings grouped into indoor climate, airborne particles and gas indices.
-- Responsive navigation and 44-pixel minimum temperature controls.
+- Desktop text navigation; five equal, icon-only mobile targets (56 pixels high),
+  with accessible names and no wrapping/overlap. Temperature controls are at
+  least 44 pixels high.
 - Visible keyboard focus, reduced-motion support and an opaque fallback for
   browsers without background blur.
 
@@ -70,7 +89,9 @@ not install an update automatically or flash an animation.
 
 ## Validation
 
-The firmware compiles with the pinned ESPHome toolchain. Browser checks cover
+The firmware compiles with the pinned ESPHome toolchain. HA backend tests use
+the 2026.9.4 APIs with mocked LAN responses; transport tests check request/reply
+guards and board switching. Browser checks cover
 Environment, History, Weather, Home Assistant and Updates at narrow mobile widths, including horizontal
 overflow and temperature-control target sizes. Native display renders compare
 the overview with and without the indicator using the firmware's actual GFX

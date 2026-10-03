@@ -1,5 +1,31 @@
 # Changelog
 
+## Firmware 0.3.7 / HA integration 0.1.1 - 2026-10-03
+
+- publish the SEN65 Air Monitor HA custom integration: user-confirmed setup,
+  local discovery, same-board address reconfiguration and an automatic sidebar
+  panel with a multi-board selector
+- reuse the exact dashboard through HA's authenticated WebSocket connection;
+  HA reaches each configured LAN board without a separate board HTTPS domain
+  or Cloudflare route
+- restrict the initial panel and its backend commands to HA administrators;
+  validate operations, LAN addresses, redirects, response sizes and frame replies
+- keep the iframe hidden during connection errors and initial loading; HA
+  v0.1.0 was a local preview, v0.1.1 is the first public package
+- simplify standalone HA setup to installation and adding a monitor, retaining
+  legacy embedding only under Advanced options
+- use five equal icon-only mobile navigation targets with accessible names
+- add deterministic HA ZIP packaging, HACS custom-repository metadata, backend
+  and frontend tests, installation/security/rollback documentation and refreshed
+  desktop/mobile dashboard screenshots
+- package matching v0.3.7 OTA/factory images and update the GitHub manifest;
+  HA integration updates and board firmware updates remain separate
+
+Validated against HA 2026.9.4 APIs with mocked boards, shared-asset and browser
+tests, and the pinned ESPHome build. A real HA installation and physical-board
+test remain. Publishing does not flash a board or install anything in HA.
+Keep the ordinary ESPHome integration for entities and automations.
+
 ## 0.3.6 - 2026-10-03
 
 - add a web History inspector using the existing e-paper RAM samples: trace

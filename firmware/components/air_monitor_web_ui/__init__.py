@@ -23,7 +23,7 @@ def _generate_html_header():
 
     html = html.replace('<link rel="stylesheet" href="style.css">', f'<style>\n{css}\n</style>')
     html = html.replace('<script src="app.js"></script>', f'<script>\n{js}\n</script>')
-    for name in ('history.js', 'home-assistant.js'):
+    for name in ('transport.js', 'history.js', 'home-assistant.js'):
         with open(os.path.join(_WEB_DIR, name), 'r') as f:
             source = f.read()
         html = html.replace(f'<script src="{name}"></script>', f'<script>\n{source}\n</script>')

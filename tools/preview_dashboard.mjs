@@ -9,7 +9,7 @@ let unit='C',haState='detected',historyState='full';
 const uptime=90000000;
 const fields={particles:['pm1','pm25','pm4','pm10'],gases:['voc','nox'],climate:['temp','rh']};
 const state=()=>({temp:23.4,rh:48.2,pm1:3.2,pm25:4.8,pm4:5.1,pm10:6.4,voc:92,nox:1,temp_unit:unit,
-  fw_version:'0.3.6',latest_version:'0.3.6',update_configured:true,update_checking:false,update_error:'',has_update:false,update_state:'no_update',update_progress:0});
+  fw_version:'0.3.7',latest_version:'0.3.7',update_configured:true,update_checking:false,update_error:'',has_update:false,update_state:'no_update',update_progress:0});
 function history(group) {
   const metrics=fields[group];if(!metrics)return null;
   const count=historyState==='empty'?0:historyState==='one'?1:288;
@@ -32,7 +32,7 @@ http.createServer(async(req,res)=>{
   if(url.pathname==='/api/weather')return json({mode:'auto',location:'Berlin, Germany',latitude:52.52,longitude:13.41,kind:4,condition:'Partly cloudy',weather_code:2,age_seconds:60,stale:false,fetching:false,error:''});
   if(url.pathname.startsWith('/api/'))return json({error:'This fixture does not perform device actions.'},409);
   if(url.pathname==='/'){haState=url.searchParams.get('ha')||'detected';historyState=url.searchParams.get('history')||'full';unit=url.searchParams.get('unit')==='F'?'F':'C';}
-  const name={'/':'index.html','/style.css':'style.css','/app.js':'app.js','/history.js':'history.js','/home-assistant.js':'home-assistant.js'}[url.pathname];
+  const name={'/':'index.html','/style.css':'style.css','/transport.js':'transport.js','/app.js':'app.js','/history.js':'history.js','/home-assistant.js':'home-assistant.js'}[url.pathname];
   if(!name){res.writeHead(404);res.end();return;}
   let content=fs.readFileSync(path.join(root,name));
   if(name==='index.html')content=content.toString().replace('<div class="shell">','<div class="shell"><p class="weather-detail">Preview · Sample history and simulated Home Assistant · No device changes</p>');

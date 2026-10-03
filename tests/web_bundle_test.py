@@ -26,7 +26,7 @@ class WebBundleTests(unittest.TestCase):
             html = gzip.decompress(data).decode()
             self.assertNotIn('<script src="', html)
             self.assertNotIn('href="style.css"', html)
-            for script in ("app.js", "history.js", "home-assistant.js"):
+            for script in ("transport.js", "app.js", "history.js", "home-assistant.js"):
                 self.assertIn((COMPONENT / "web" / script).read_text(), html)
             self.assertLess(len(data), 35000)
             source = (COMPONENT / "air_monitor_web_ui.h").read_text()
