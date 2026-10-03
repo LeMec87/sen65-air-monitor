@@ -38,6 +38,11 @@ version and URL guards apply to the local dashboard API.
 
 ## Problems
 
+The HA custom integration has its own releases. If its dashboard is clipped
+to a short strip, update that integration to **ha-v0.1.2**, restart HA and
+fully reload its browser page. This does not require a board firmware update.
+See the [HA upgrade instructions](home-assistant.md#updating-from-v011-clipped-dashboard-fix).
+
 - **Initial update required:** use ESPHome OTA or USB once. An old dashboard
   may instead show an unknown version or a check that never finds an update.
 - **Update error / timeout:** verify internet access, then check again.

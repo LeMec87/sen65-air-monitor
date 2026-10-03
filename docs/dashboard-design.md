@@ -1,4 +1,4 @@
-# Dark glass dashboard — firmware v0.3.7 / HA v0.1.1
+# Dark glass dashboard — firmware v0.3.7 / HA v0.1.2
 
 The dark glass design was introduced in v0.3.3. These current screenshots
 include the History inspector, simplified Home Assistant setup and shared HA
@@ -53,6 +53,12 @@ The panel previews use simulated HA commands and sample boards. Real HA serves
 the same dashboard through its authenticated connection and registers a sidebar
 panel. No separate board HTTPS address is needed. HA installation remains a
 separate validation step; the fixture is not a full HA frontend.
+
+HA v0.1.2 fixes the dashboard clipped to a 150-pixel strip in an auto-height
+custom-panel wrapper. These updated screenshots use that auto-height constraint;
+the fixture no longer sets a height on the component to conceal sizing failures.
+Desktop and 320/393-pixel mobile resize checks pass; confirmation in the user's
+real HA installation after updating remains a separate step.
 
 ## Visual direction
 

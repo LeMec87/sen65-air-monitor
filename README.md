@@ -31,7 +31,7 @@ new files on GitHub never installs them automatically. See the
 
 The **v0.3.7** source and matching OTA/factory images are available in `dist/`.
 Install the release on a board for the compact mobile menu and simplified HA setup.
-The separate **HA integration v0.1.1** works with board firmware v0.3.6 or later.
+The separate **HA integration v0.1.2** works with board firmware v0.3.6 or later.
 Build, backend and browser tests pass; real-board/HA installation testing remains.
 
 - SEN65 readings: PM1, PM2.5, PM4, PM10, temperature, humidity, VOC and NOx
@@ -53,8 +53,8 @@ Build, backend and browser tests pass; real-board/HA installation testing remain
 - interactive web History: toggle traces and inspect recorded points (v0.3.6+)
 - local Home Assistant discovery and optional integration setup
 - the exact dashboard through HA's authenticated connection, with automatic
-  sidebar registration and a multi-board selector (HA integration v0.1.1)
-- one-row icon-only mobile navigation (firmware v0.3.7 / HA integration v0.1.1)
+  sidebar registration and a multi-board selector (HA integration v0.1.2)
+- one-row icon-only mobile navigation (firmware v0.3.7 / HA integration v0.1.2)
 - Wi-Fi onboarding through captive portal and Improv Serial/BLE
 
 ## Web dashboard
@@ -86,12 +86,18 @@ sidebar panel appears automatically and supports multiple boards. The browser
 uses HA's authenticated connection; HA contacts the board on the LAN. No board
 subdomain, certificate or additional Cloudflare route is needed.
 
-Download the [HA v0.1.1 installation ZIP](dist/home-assistant/sen65-air-monitor-ha-v0.1.1.zip)
+Download the [HA v0.1.2 installation ZIP](dist/home-assistant/sen65-air-monitor-ha-v0.1.2.zip)
 or add this repository to HACS as an **Integration** custom repository.
 It is not in the default HACS catalogue. The first version is administrator-only
 because it includes device controls. Keep native ESPHome for sensor entities
 and automations. HA API tests use **2026.9.4** with mocked boards, not a real-user
 HA installation. See the [installation and security guide](docs/home-assistant.md).
+
+**Already using HA v0.1.1?** Update the custom integration to v0.1.2, restart
+HA and fully reload its browser page. This fixes the dashboard clipped to a
+150-pixel strip in HA's auto-height panel wrapper. No board firmware update or
+graph-history reset is required. The preview now uses the same auto-height
+constraint, rather than forcing the component to fill its container externally.
 
 ![Shared dashboard in the simulated HA panel](docs/dashboard-ha-panel.jpg)
 

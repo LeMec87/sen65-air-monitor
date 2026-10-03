@@ -1,7 +1,7 @@
 {
   "domain": "sen65_air_monitor",
   "name": "SEN65 Air Monitor",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "codeowners": ["@LeMec87"],
   "config_flow": true,
   "dependencies": ["frontend", "http", "panel_custom", "websocket_api"],

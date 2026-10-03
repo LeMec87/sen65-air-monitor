@@ -15,7 +15,7 @@ connection; HA, not the remote browser, must be able to reach the board.
 
 ## Status and requirements
 
-- Integration version: **0.1.1, initial public release**. Available from this
+- Integration version: **0.1.2, panel-height fix**. Available from this
   repository, but not included in the default HACS catalogue.
 - Tested API compatibility: **Home Assistant 2026.9.4**, Python 3.14. Earlier
   HA versions are not currently declared supported.
@@ -40,6 +40,29 @@ See [attribution and changes](../NOTICE.md) and the [license](../LICENSE).
 
 ## Installation
 
+### Updating from v0.1.1: clipped dashboard fix
+
+The public v0.1.1 panel can collapse to a 150-pixel iframe in HA's auto-height
+custom-panel wrapper, leaving most of the screen blank. v0.1.2 fixes that sizing
+bug by measuring the available viewport and allocating it to the dashboard.
+This update changes
+only the HA integration, not board firmware.
+
+In HACS, open the SEN65 Air Monitor repository, check for the latest release
+and download **ha-v0.1.2**. If HACS has not refreshed its release list yet,
+refresh the repository information before downloading. Then restart HA and
+fully reload the HA browser page (or reopen the Companion app) so its new
+panel module is loaded. Keep existing SEN65 and ESPHome entries.
+
+For manual installation, download the [v0.1.2 ZIP](../dist/home-assistant/sen65-air-monitor-ha-v0.1.2.zip),
+back up the current component and replace only
+`/config/custom_components/sen65_air_monitor` with the folder from the v0.1.2
+package. Restart HA and fully reload the HA browser page to load the new panel
+module. Keep existing SEN65 and ESPHome entries. No board restart or graph-history
+reset is needed. Confirm that the panel fills the visible screen and remains
+usable after resizing and selecting History; roll back to the backed-up component
+and restart HA if the update fails.
+
 ### Manual installation
 
 1. Copy **only** `custom_components/sen65_air_monitor` into your HA configuration
@@ -53,7 +76,7 @@ See [attribution and changes](../NOTICE.md) and the [license](../LICENSE).
 5. Open **SEN65 Air Monitor** in the HA sidebar. No second dashboard-creation step
    is needed. Add another integration entry for each additional board.
 
-For a packaged install, download the [v0.1.1 installation ZIP](../dist/home-assistant/sen65-air-monitor-ha-v0.1.1.zip)
+For a packaged install, download the [v0.1.2 installation ZIP](../dist/home-assistant/sen65-air-monitor-ha-v0.1.2.zip)
 and extract it into the HA
 configuration directory; it already contains the `custom_components` structure.
 Back up an existing installation first. Do not extract the entire project or
@@ -112,6 +135,10 @@ HTTPS, as it does in the standalone dashboard.
 
 The following fixture runs the actual panel and shared frontend with simulated
 HA commands and sample boards, not a real HA installation:
+
+It deliberately uses an auto-height wrapper, with no externally forced panel
+height. This reproduces HA's percentage-height failure and prevents the fixture
+from hiding it again. The panel itself must fill the remaining viewport.
 
 ```sh
 node tools/preview_dashboard.mjs 8768

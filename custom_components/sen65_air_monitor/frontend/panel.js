@@ -3,17 +3,40 @@ class SEN65AirMonitorPanel extends HTMLElement {
   constructor() {
     super();this._hass=null;this._entries=[];this._selected='';this._loading=false;
     this.attachShadow({mode:'open'});
-    this.shadowRoot.innerHTML=`<style>:host{display:block;height:100%;background:#0b111b;color:#e9eff6;font-family:system-ui}[hidden]{display:none!important} .bar{display:flex;align-items:center;gap:12px;padding:10px 16px;background:#142133;border-bottom:1px solid #ffffff24}label{font-size:12px}select{min-height:44px;max-width:100%;color:inherit;background:#1e3044;border:1px solid #ffffff33;border-radius:12px;padding:8px 12px}iframe{display:block;width:100%;height:calc(100% - 65px);border:0}p{padding:16px;font-size:13px}button{min-height:44px;padding:8px 14px;color:inherit;background:#2585d9;border:0;border-radius:12px}</style><div class="bar"><label for="board">Monitor</label><select id="board" aria-label="Select monitor"></select></div><p id="status" role="status">Connecting to Home Assistant…</p><button id="retry" hidden>Try again</button><iframe title="SEN65 Air Monitor dashboard" hidden></iframe>`;
+    this.shadowRoot.innerHTML=`<style>:host{display:flex;flex-direction:column;box-sizing:border-box;height:var(--sen65-panel-height,100vh);height:var(--sen65-panel-height,100dvh);min-height:0;overflow:hidden;background:#0b111b;color:#e9eff6;font-family:system-ui}[hidden]{display:none!important}.bar{display:flex;flex:0 0 auto;align-items:center;gap:12px;padding:10px 16px;background:#142133;border-bottom:1px solid #ffffff24}label{font-size:12px}select{font:inherit;font-size:13px;min-width:0;min-height:44px;max-width:100%;color:inherit;background:#1e3044;border:1px solid #ffffff33;border-radius:12px;padding:8px 12px}iframe{display:block;flex:1 1 0;width:100%;min-height:0;border:0}p{padding:16px;font-size:13px}button{min-height:44px;padding:8px 14px;color:inherit;background:#2585d9;border:0;border-radius:12px}</style><div class="bar"><label for="board">Monitor</label><select id="board" aria-label="Select monitor"></select></div><p id="status" role="status">Connecting to Home Assistant…</p><button id="retry" hidden>Try again</button><iframe title="SEN65 Air Monitor dashboard" hidden></iframe>`;
     this._frame=this.shadowRoot.querySelector('iframe');this._select=this.shadowRoot.querySelector('select');
     this._status=this.shadowRoot.querySelector('#status');this._retry=this.shadowRoot.querySelector('#retry');
     this._select.addEventListener('change',()=>this._show(this._select.value));
     this._retry.addEventListener('click',()=>this._load());
     this._receive=event=>this._bridge(event);
+    this._scheduleFit=()=>{if(!this.isConnected||this._fitFrame!=null)return;this._fitFrame=requestAnimationFrame(()=>{this._fitFrame=null;this._fitViewport();});};
   }
   set hass(value){this._hass=value;if(this.isConnected&&!this._entries.length&&!this._loading&&this._retry.hidden)this._load();}
   set panel(value){this._panel=value;}
-  connectedCallback(){window.addEventListener('message',this._receive);if(this._hass)this._load();}
-  disconnectedCallback(){window.removeEventListener('message',this._receive);this._frame.src='about:blank';this._entries=[];this._selected='';}
+  set narrow(value){this._narrow=value;this._scheduleFit();}
+  connectedCallback(){
+    window.addEventListener('message',this._receive);window.addEventListener('resize',this._scheduleFit);
+    window.visualViewport?.addEventListener('resize',this._scheduleFit);
+    if(typeof ResizeObserver!=='undefined'&&this.parentElement){this._sizeObserver=new ResizeObserver(this._scheduleFit);this._sizeObserver.observe(this.parentElement);}
+    this._scheduleFit();if(this._hass)this._load();
+  }
+  disconnectedCallback(){
+    window.removeEventListener('message',this._receive);window.removeEventListener('resize',this._scheduleFit);
+    window.visualViewport?.removeEventListener('resize',this._scheduleFit);this._sizeObserver?.disconnect();
+    if(this._fitFrame!=null)cancelAnimationFrame(this._fitFrame);this._fitFrame=null;
+    this._frame.src='about:blank';this._entries=[];this._selected='';
+  }
+  _fitViewport(){
+    if(!this.isConnected)return;
+    // HA's custom-panel wrapper can have auto height. Percentage iframe heights
+    // then fall back to 150px, so measure the visible space instead of inheriting.
+    const viewport=window.visualViewport;
+    const bottom=viewport?viewport.offsetTop+viewport.height:window.innerHeight;
+    const padding=parseFloat(getComputedStyle(this.parentElement||this).paddingBottom)||0;
+    const height=Math.max(0,Math.floor(bottom-Math.max(0,this.getBoundingClientRect().top)-padding));
+    const value=height+'px';
+    if(this.style.getPropertyValue('--sen65-panel-height')!==value)this.style.setProperty('--sen65-panel-height',value);
+  }
   async _load(){
     if(!this._hass||this._loading)return;
     this._loading=true;this._retry.hidden=true;

@@ -1,5 +1,21 @@
 # Changelog
 
+## HA integration 0.1.2 - 2026-10-03
+
+- fix the clipped 150-pixel dashboard iframe inside HA's auto-height custom-panel
+  wrapper; the panel now measures its available viewport height and uses a flex
+  layout to give the dashboard all space below the monitor selector
+- update sizing on window/mobile viewport, parent-container and narrow-layout
+  changes; account for the panel's top offset and bottom safe-area padding
+- remove the preview's forced panel height, which masked this real integration
+  bug, and add sizing/resize regression checks
+- keep firmware v0.3.7 unchanged; this is an HA integration update only
+
+The clipping was reproduced using the published v0.1.1 component in an
+auto-height wrapper: iframe height 150 pixels. The corrected component fills
+the available space in desktop and 320/393-pixel mobile browser checks. Real
+HA confirmation after installation is still required. No board is flashed.
+
 ## Firmware 0.3.7 / HA integration 0.1.1 - 2026-10-03
 
 - publish the SEN65 Air Monitor HA custom integration: user-confirmed setup,
