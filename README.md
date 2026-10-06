@@ -29,10 +29,13 @@ new files on GitHub never installs them automatically. See the
 
 ## Features
 
-The **v0.3.7** source and matching OTA/factory images are available in `dist/`.
-Install the release on a board for the compact mobile menu and simplified HA setup.
-The separate **HA integration v0.1.2** works with board firmware v0.3.6 or later.
-Build, backend and browser tests pass; real-board/HA installation testing remains.
+The latest published OTA/factory images are **v0.3.7**, available in `dist/`.
+Install the release on a board for the compact mobile menu. The native ESPHome
+API is already included.
+Home Assistant connects through its **built-in ESPHome integration**; no HACS
+repository or custom component is required. The native API has been checked
+on a board running v0.3.7; setup inside the user's HA instance remains separate.
+The revised ESPHome setup page is a source change, not yet a released firmware image.
 
 - SEN65 readings: PM1, PM2.5, PM4, PM10, temperature, humidity, VOC and NOx
 - custom Space Grotesk e-paper dashboard
@@ -51,10 +54,9 @@ Build, backend and browser tests pass; real-board/HA installation testing remain
 - exact display capture at `/screen.pbm`
 - ESPHome/Home Assistant API
 - interactive web History: toggle traces and inspect recorded points (v0.3.6+)
-- local Home Assistant discovery and optional integration setup
-- the exact dashboard through HA's authenticated connection, with automatic
-  sidebar registration and a multi-board selector (HA integration v0.1.2)
-- one-row icon-only mobile navigation (firmware v0.3.7 / HA integration v0.1.2)
+- local Home Assistant discovery and built-in ESPHome setup guidance
+- native HA sensor entities for dashboard cards, Recorder history and automations
+- one-row icon-only mobile navigation (firmware v0.3.7)
 - Wi-Fi onboarding through captive portal and Improv Serial/BLE
 
 ## Web dashboard
@@ -73,48 +75,38 @@ See the [dashboard design and validation notes](docs/dashboard-design.md).
 
 From **v0.3.6**, the dashboard also includes **History** and **Home Assistant**.
 History uses the board's existing five-minute RAM samples, with legend toggles
-and click/slider inspection. From **v0.3.7**, HA setup is reduced to installing
-the integration once, then adding the monitor. Mobile navigation uses five
+and click/slider inspection. The current source guides HA setup through the
+built-in ESPHome integration instead of a custom repository. Mobile navigation uses five
 aligned icons with accessible names; desktop navigation retains text labels.
 See [interactive history](docs/history.md) and [Home Assistant setup](docs/home-assistant.md).
 
-### Home Assistant: the same dashboard, no extra HTTPS address
+### Home Assistant via ESPHome
 
-Install the `custom_components/sen65_air_monitor` integration, restart HA and
-add your monitor under **Settings → Devices & services**. The **SEN65 Air Monitor**
-sidebar panel appears automatically and supports multiple boards. The browser
-uses HA's authenticated connection; HA contacts the board on the LAN. No board
-subdomain, certificate or additional Cloudflare route is needed.
+Open **Settings → Devices & services → Add integration → ESPHome** in HA.
+Enter the board's local IP/hostname and port **6053**, or confirm the discovered
+ESPHome device. The existing firmware already supports this connection: no
+custom integration download, HA restart or new board firmware is required.
 
-Download the [HA v0.1.2 installation ZIP](dist/home-assistant/sen65-air-monitor-ha-v0.1.2.zip)
-or add this repository to HACS as an **Integration** custom repository.
-It is not in the default HACS catalogue. The first version is administrator-only
-because it includes device controls. Keep native ESPHome for sensor entities
-and automations. HA API tests use **2026.9.4** with mocked boards, not a real-user
-HA installation. See the [installation and security guide](docs/home-assistant.md).
+HA receives all eight sensor entities and supports its own cards, history and
+automations. ESPHome does **not** automatically copy the glass dashboard into
+HA. The original web dashboard remains available at the board's local address.
+Remote HA access can use its existing HTTPS/Cloudflare Tunnel connection; no
+separate board HTTPS route is needed for native sensor entities.
 
-**Already using HA v0.1.1?** Update the custom integration to v0.1.2, restart
-HA and fully reload its browser page. This fixes the dashboard clipped to a
-150-pixel strip in HA's auto-height panel wrapper. No board firmware update or
-graph-history reset is required. The preview now uses the same auto-height
-constraint, rather than forcing the component to fill its container externally.
-
-![Shared dashboard in the simulated HA panel](docs/dashboard-ha-panel.jpg)
-
-![Compact icon-only mobile panel](docs/dashboard-ha-panel-mobile.jpg)
+See [ESPHome setup and migration](docs/home-assistant.md). Only the native
+ESPHome connection is maintained; the custom HA dashboard integration has been
+removed from the current repository.
 
 ![Interactive History with a hidden trace and selected sample](docs/dashboard-history.jpg)
 
-![Simplified Home Assistant setup with simulated local discovery](docs/dashboard-home-assistant.jpg)
+![Built-in ESPHome setup with simulated local discovery](docs/dashboard-home-assistant.png)
 
 All screenshots use sample data, not proof of a real board installation or HA
-pairing. The panel fixture does not reproduce HA's outer sidebar or login.
+pairing. The setup preview does not create a Home Assistant connection.
 
 For a safe sample-data preview, run `node tools/preview_dashboard.mjs` from
 the repository root and open `http://127.0.0.1:8768/`. It makes no requests to
 a real board or HA server. Preview query options are documented in the guides.
-To preview the panel too, run `node tools/preview_ha_panel.mjs 8769` in another
-terminal and open `http://127.0.0.1:8769/`.
 
 ## Weather settings
 
@@ -214,30 +206,6 @@ The chart history is kept in RAM to avoid unnecessary flash wear. It starts
 again after a reboot and reaches the full 24-hour window after 288 samples.
 
 ## Install
-
-Weather mapping and firmware version/download validation can be tested without
-a board:
-
-```bash
-c++ -std=c++17 tests/weather_test.cpp -o /tmp/sen65-weather-test
-/tmp/sen65-weather-test
-c++ -std=c++17 tests/firmware_release_test.cpp -o /tmp/sen65-release-test
-/tmp/sen65-release-test
-python3 tests/release_manifest_test.py
-python3 tests/dashboard_assets_test.py
-python3 tests/history_axes_test.py
-node tests/dashboard_models_test.js
-python3 tests/web_bundle_test.py
-python3 tests/history_ring_test.py
-c++ -std=c++17 tests/history_integration_test.cpp -o /tmp/sen65-history-test
-/tmp/sen65-history-test
-```
-
-On macOS, if the C++ compiler cannot find standard headers, add
-`-isystem "$(xcrun --show-sdk-path)/usr/include/c++/v1"` to the C++ commands.
-The release-manifest test intentionally requires the YAML version to match the
-published binaries; an unreleased version bump will fail that check until
-release packaging is performed. Do not overwrite an existing release binary.
 
 First installation or recovery over USB:
 

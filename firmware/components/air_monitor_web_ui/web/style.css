@@ -163,6 +163,8 @@ h1 { font-size: 19px; font-weight: 700; letter-spacing: -.6px; margin: 0; }
 .ha-step p { color: var(--muted); font-size: 12px; line-height: 1.7; margin: 12px 0; }
 .ha-step .fw-actions { margin-top: 14px; }
 .ha-step .fw-btn { flex: 1; }
+.ha-step a.fw-btn { text-decoration: none; }
+.ha-step .ha-address { margin-top: 12px; }
 .ha-dashboard-steps { padding-left: 20px; margin: 16px 0 0; color: var(--muted); font-size: 12px; line-height: 1.7; }
 .ha-dashboard-steps li + li { margin-top: 7px; }
 .ha-dashboard-steps strong { color: var(--ink); font-weight: 500; }
@@ -171,7 +173,8 @@ h1 { font-size: 19px; font-weight: 700; letter-spacing: -.6px; margin: 0; }
 .ha-advanced summary:focus-visible { outline: 2px solid var(--primary); outline-offset: 4px; border-radius: 4px; }
 .ha-advanced h3 { font-size: 14px; font-weight: 500; margin: 22px 0 10px; }
 .ha-address { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px; border: 1px solid var(--line); border-radius: 14px; background: #0b111b55; }
-.ha-address code { color: var(--ink); font-size: 12px; overflow-wrap: anywhere; }
+.ha-address code { color: var(--ink); font-size: 12px; overflow-wrap: anywhere; min-width: 0; flex: 1; }
+.ha-address .fw-btn { flex: 0 0 auto; }
 .ha-warning { padding: 16px; border: 1px solid #f28f1655; border-radius: 16px; background: #f28f1610; color: #ffd297; font-size: 12px; line-height: 1.7; }
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .card, .firmware-card, .tab-buttons { background: #142133; }

@@ -7,3 +7,20 @@ firmware/secrets.yaml
 firmware/components/air_monitor_web_ui/air_monitor_web_ui_html.h
 dist/*.elf
 dist/*.map
+
+# Local-only validation, retired HA panel packages, and hardware experiments.
+/tests/
+/test/
+/custom_components/
+/home_assistant/
+/hacs.json
+/dist/home-assistant/
+/docs/home-assistant-legacy.md
+/docs/large-display-usb.md
+/firmware/sen65-air-monitor-large-usb.yaml
+/firmware/components/air_monitor_epaper/air_monitor_large_display.h
+/tools/package_ha_integration.py
+/tools/preview_ha_panel.mjs
+/tools/sync_ha_frontend.py
+/docs/dashboard-ha-panel.jpg
+/docs/dashboard-ha-panel-mobile.jpg

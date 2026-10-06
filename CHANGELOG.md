@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased - 2026-10-06
+
+- use the built-in ESPHome integration for Home Assistant connections
+- remove HA dashboard linking, iframe YAML, custom panel, HACS metadata,
+  integration ZIPs and obsolete panel previews from the current repository
+- keep tests and large-display experiments local and exclude them from Git
+- update connection guidance and its sample-data screenshot
+- keep v0.3.7 binaries and the OTA manifest unchanged; this is a source cleanup,
+  not a new firmware release or an installation on a board
+
+The entries below describe historical releases. Their custom HA panel is no
+longer provided by the current source tree.
+
 ## HA integration 0.1.2 - 2026-10-03
 
 - fix the clipped 150-pixel dashboard iframe inside HA's auto-height custom-panel

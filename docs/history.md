@@ -70,7 +70,7 @@ Celsius in the API; the browser converts once if Fahrenheit is selected.
 Non-finite values serialize as `null`. These local endpoints use the existing
 device HTTP server and do not add authentication or Internet exposure.
 
-## Development preview and tests
+## Development preview
 
 From the repository root, run `node tools/preview_dashboard.mjs` and open
 `http://127.0.0.1:8768/`. The banner identifies sample data and simulated Home
@@ -78,10 +78,4 @@ Assistant status. No board or HA requests are made by the fixture server.
 Options include `?history=overlap`, `?history=empty`, `?history=one` and
 `?unit=F`. The fixture's state is shared by preview tabs, not isolated per tab.
 
-Run `node tests/dashboard_models_test.js`, `python3 tests/web_bundle_test.py`
-and the C++ history integration test documented in the README. They cover
-category validation, missing values, uptime wrap, full/empty buffers, unit
-conversion, nearest sample selection and deterministic compressed web assets.
-`python3 tests/history_ring_test.py` exercises the actual sampling functions,
-including every valid update contributing to the average and oldest/newest
-ordering after the ring wraps.
+Development tests are kept locally and are not distributed in this repository.

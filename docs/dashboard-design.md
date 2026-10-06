@@ -1,8 +1,8 @@
-# Dark glass dashboard — firmware v0.3.7 / HA v0.1.2
+# Dark glass dashboard — firmware v0.3.7 and current source
 
 The dark glass design was introduced in v0.3.3. These current screenshots
-include the History inspector, simplified Home Assistant setup and shared HA
-panel. They use sample
+include the History inspector and built-in ESPHome setup guidance. The revised
+setup page is not yet part of a released firmware image. They use sample
 readings and simulated controls, not an installed board. Publishing a release
 does not install it on a device; these additions have not been verified on hardware.
 
@@ -39,26 +39,15 @@ The real page reads the board's existing RAM history. See [History](history.md).
 
 ### Home Assistant
 
-![Simplified Home Assistant setup with simulated discovery](dashboard-home-assistant.jpg)
+![Built-in ESPHome setup with simulated discovery](dashboard-home-assistant.png)
 
 “Detected” is simulated in this screenshot. It is not proof of a real discovery,
-integration or embedded HA dashboard. See [Home Assistant setup](home-assistant.md)
-for installation, administrator access and HA's authenticated transport.
+integration or an HA dashboard. See [Home Assistant via ESPHome](home-assistant.md)
+for native sensor pairing, history and safe migration. No HACS installation is
+required. ESPHome does not automatically copy the glass dashboard into HA.
 
-![Shared dashboard in the simulated HA panel](dashboard-ha-panel.jpg)
-
-![Five aligned icons in the mobile HA panel](dashboard-ha-panel-mobile.jpg)
-
-The panel previews use simulated HA commands and sample boards. Real HA serves
-the same dashboard through its authenticated connection and registers a sidebar
-panel. No separate board HTTPS address is needed. HA installation remains a
-separate validation step; the fixture is not a full HA frontend.
-
-HA v0.1.2 fixes the dashboard clipped to a 150-pixel strip in an auto-height
-custom-panel wrapper. These updated screenshots use that auto-height constraint;
-the fixture no longer sets a height on the component to conceal sizing failures.
-Desktop and 320/393-pixel mobile resize checks pass; confirmation in the user's
-real HA installation after updating remains a separate step.
+Only native ESPHome pairing is provided. There is no dashboard linking or
+custom HA panel in the current project.
 
 ## Visual direction
 
@@ -95,12 +84,8 @@ not install an update automatically or flash an animation.
 
 ## Validation
 
-The firmware compiles with the pinned ESPHome toolchain. HA backend tests use
-the 2026.9.4 APIs with mocked LAN responses; transport tests check request/reply
-guards and board switching. Browser checks cover
-Environment, History, Weather, Home Assistant and Updates at narrow mobile widths, including horizontal
-overflow and temperature-control target sizes. Native display renders compare
-the overview with and without the indicator using the firmware's actual GFX
-fonts. Release packaging checks the OTA partition size, manifest and image
-checksums. Hardware installation and physical e-paper readability checks remain
-separate steps; no board was updated as part of this publication.
+Published firmware images were built with the pinned ESPHome toolchain.
+Current source changes are checked separately and do not replace immutable
+release binaries. Browser checks cover the ESPHome connection page, discovery,
+offline states and narrow layouts. Screenshots contain sample data, not proof
+of HA pairing. Hardware installation remains a separate step.

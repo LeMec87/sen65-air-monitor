@@ -1,197 +1,120 @@
-# Home Assistant: the exact dashboard, without a separate HTTPS address
+# Home Assistant via ESPHome
 
-The custom **SEN65 Air Monitor** integration serves the same dashboard through
-Home Assistant. After adding a board, an **SEN65 Air Monitor** sidebar panel is
-registered automatically. It includes Environment, interactive 24-hour History,
-Weather and Firmware & Updates. Multiple boards share one panel with a selector.
+Connect the monitor using Home Assistant's **built-in ESPHome integration**.
+No HACS repository, custom component, installation ZIP or HA restart is needed
+for this connection. The firmware already includes the native ESPHome API.
+The ESPHome Device Builder is optional: it is a firmware editing/build tool,
+not a requirement for adding an already-flashed board.
 
-```text
-Browser / Companion app → HA login + HTTPS/WebSocket → HA backend → LAN board
-```
+## Connect a board
 
-No board subdomain, Cloudflare route, certificate, mixed-content exception or
-Webpage dashboard configuration is needed. Remote access uses the existing HA
-connection; HA, not the remote browser, must be able to reach the board.
+1. Connect the monitor to Wi-Fi. Home Assistant must be able to reach it on
+   the local network.
+2. In HA, open **Settings → Devices & services**. If the ESPHome monitor appears
+   under **Discovered**, select **Add** and confirm.
+3. Otherwise, select **Add integration → ESPHome**. Enter the **board's** local
+   IP address or `.local` hostname and port **6053**. Do not enter HA's address
+   or a dashboard URL. The board's Device Information screen shows its IP;
+   its web dashboard's Home Assistant tab also provides a **Copy host** button.
+4. If asked for an encryption key, use the key configured on that board.
+   The current public firmware configuration does not enable API encryption;
+   leave the key blank for that configuration. Never invent or share a key.
+5. Confirm setup and assign the device to an area. Open the device in the
+   ESPHome integration and check that its readings update.
 
-## Status and requirements
+[Open ESPHome setup in HA](https://my.home-assistant.io/redirect/config_flow_start/?domain=esphome).
+The My Home Assistant link may ask for your HA instance URL. Manual navigation
+above works without that link.
 
-- Integration version: **0.1.2, panel-height fix**. Available from this
-  repository, but not included in the default HACS catalogue.
-- Tested API compatibility: **Home Assistant 2026.9.4**, Python 3.14. Earlier
-  HA versions are not currently declared supported.
-- Board firmware **v0.3.6 or later**, with `/api/state`, `/api/history`,
-  `/api/weather` and `/api/home_assistant`.
-- An HA administrator account. The first version deliberately restricts both
-  panel access and every backend command to administrators, because the shared
-  interface can change settings and install firmware.
-- HA can reach the configured board on its private LAN. IPv4 RFC1918 addresses
-  and IPv6 ULA addresses are accepted; loopback, public and link-local targets
-  are rejected. Hostnames must resolve exclusively to accepted LAN addresses.
+Add each board separately. The firmware appends a MAC suffix to its hostname
+so multiple monitors have distinct identities. A DHCP reservation helps keep
+each board's IP stable. Do not add a second entry for a board already connected
+through ESPHome; open its existing entry instead.
 
-This is a dashboard integration, not a replacement for native ESPHome sensor
-entities. Keep or add the ordinary ESPHome integration for automations and HA
-Recorder history. The shared graph still displays the board's RAM-only history;
-it resets after reboot and uses five-minute averages of sensor updates.
+## What appears in Home Assistant
 
-The shared dashboard is adapted from Aether by Enrique Neyra / Syntropy Labs.
-The project remains under **CC BY-NC-SA 4.0**, including NonCommercial and
-ShareAlike conditions; public availability does not grant commercial use.
-See [attribution and changes](../NOTICE.md) and the [license](../LICENSE).
+The board exposes eight sensor entities: **PM1.0, PM2.5, PM4.0, PM10,
+Temperature, Humidity, VOC Index and NOx Index**. The SEN65 has no CO₂ sensor.
+Sensor readings are sampled every five seconds and pushed through the native
+API. Actual delivery can also depend on the component's update filtering.
 
-## Installation
+The API also exposes **Temperature Unit** and **Firmware Update**. A **Factory
+Reset** button is exposed too; it is destructive, not part of setup, and must
+not be pressed to connect HA. Device-specific entity IDs are assigned by HA;
+use the entity picker instead of copying assumed IDs from another board.
 
-### Updating from v0.1.1: clipped dashboard fix
+Temperature is exposed in Celsius by the sensor. HA's entity/unit preferences
+control its presentation in HA; the Temperature Unit selector controls this
+project's local display and dashboard.
 
-The public v0.1.1 panel can collapse to a 150-pixel iframe in HA's auto-height
-custom-panel wrapper, leaving most of the screen blank. v0.1.2 fixes that sizing
-bug by measuring the available viewport and allocating it to the dashboard.
-This update changes
-only the HA integration, not board firmware.
+## Sensor history
 
-In HACS, open the SEN65 Air Monitor repository, check for the latest release
-and download **ha-v0.1.2**. If HACS has not refreshed its release list yet,
-refresh the repository information before downloading. Then restart HA and
-fully reload the HA browser page (or reopen the Companion app) so its new
-panel module is loaded. Keep existing SEN65 and ESPHome entries.
+This project provides the ESPHome connection only. No dashboard linking,
+iframe, custom sidebar panel or dashboard YAML is provided. The device's own
+web dashboard and e-paper display remain available independently.
 
-For manual installation, download the [v0.1.2 ZIP](../dist/home-assistant/sen65-air-monitor-ha-v0.1.2.zip),
-back up the current component and replace only
-`/config/custom_components/sen65_air_monitor` with the folder from the v0.1.2
-package. Restart HA and fully reload the HA browser page to load the new panel
-module. Keep existing SEN65 and ESPHome entries. No board restart or graph-history
-reset is needed. Confirm that the panel fills the visible screen and remains
-usable after resizing and selecting History; roll back to the backed-up component
-and restart HA if the update fails.
+HA Recorder stores its own sensor history according to your HA configuration.
+It does not import the board's existing 24-hour RAM graph. Recording begins
+when the entities are connected and included in Recorder. The local charts
+still use five-minute averages and reset when the board restarts.
 
-### Manual installation
+## HTTPS and Cloudflare Tunnel
 
-1. Copy **only** `custom_components/sen65_air_monitor` into your HA configuration
-   directory's `custom_components` folder. The resulting path must be
-   `/config/custom_components/sen65_air_monitor/manifest.json` on HA OS.
-   For HA Container, use its mounted configuration directory.
-2. Restart Home Assistant.
-3. Select **Settings → Devices & services → Add integration → SEN65 Air Monitor**.
-4. Enter the board's local address (for example `sen65-air-monitor-example.local`)
-   and a room name. Confirm setup.
-5. Open **SEN65 Air Monitor** in the HA sidebar. No second dashboard-creation step
-   is needed. Add another integration entry for each additional board.
+HA connects to the board's native API on the LAN. A remote browser connects to
+HA through HA's existing authenticated HTTPS connection, including Cloudflare
+Tunnel. The browser does not contact the board directly for these HA entities.
+No board HTTPS certificate, separate Cloudflare route or iframe is required.
 
-For a packaged install, download the [v0.1.2 installation ZIP](../dist/home-assistant/sen65-air-monitor-ha-v0.1.2.zip)
-and extract it into the HA
-configuration directory; it already contains the `custom_components` structure.
-Back up an existing installation first. Do not extract the entire project or
-replace other custom integrations. Removing this integration entry removes the
-panel when the last board is removed; it does not reset the board or ESPHome.
+Keep the board's web server and TCP port 6053 private. Do not port-forward
+them or publish the bare board through a tunnel. For stronger LAN protection,
+configure a unique API encryption key in a private firmware configuration;
+this requires reflashing and supplying the same key in HA. Do not commit keys
+or Wi-Fi credentials to the public repository.
 
-### HACS custom repository
+## Troubleshooting
 
-The repository contains one integration and a `hacs.json` for custom-repository
-installation. Add
-`https://github.com/LeMec87/sen65-air-monitor` to HACS as an **Integration** custom
-repository, download it, restart HA, then follow steps 3–5 above. This is not a
-claim of HACS catalogue inclusion or an official HA built-in integration.
+- **Not discovered:** mDNS can be blocked across VLANs. Add ESPHome manually
+  with the board's local IP. HA must still reach TCP port 6053.
+- **Cannot connect:** check the board's current IP, power and Wi-Fi, then
+  verify routing/firewall access from the HA host. A web page working on your
+  laptop does not prove HA can reach the API.
+- **Encryption/key error:** match the settings in the firmware actually
+  installed on the board. Do not disable an existing encrypted setup to work
+  around a missing key.
+- **Wrong setup flow:** choose **ESPHome**, not the custom **SEN65 Air Monitor**
+  integration. No custom integration files are needed.
+- **HA status says Not found:** board-side discovery is informational, not a
+  prerequisite. Native ESPHome setup can work without finding an HA instance.
+  Connected means a native API client identifying itself as HA is connected;
+  it does not verify a particular dashboard layout.
+- **ESPHome Device Builder offers adoption:** adoption is optional and is
+  separate from pairing the device. Do not replace the firmware with a generic
+  ESP32 template; it would omit the sensor/display components and project UI.
 
-## Discovery, offline boards and address changes
+## Moving from the custom integration
 
-The integration can offer an mDNS-discovered `sen65-air-monitor*` ESPHome device
-for confirmation after the integration has been installed. Discovery does not
-silently add a device or redirect an existing entry. Manual address entry works
-when multicast is blocked. Discovered native API port 6053 is not used for the
-dashboard; its HTTP endpoint is on port 80.
+First add or verify the native ESPHome entry and confirm its sensor readings.
+Keep any existing ESPHome entities, automations and dashboards. The old custom
+integration is independent; migrating does not require resetting the board.
 
-Setup checks the expected API and uses the board's reported `.local` host as its
-stable identity. A renamed board may need to be removed and added again. After
-a DHCP address change, use the integration entry's **Reconfigure** action and
-enter the new address of the same board. A DHCP reservation is recommended.
+Once native ESPHome works, you may remove the **SEN65 Air Monitor custom
+integration** entry if its sidebar panel is no longer needed. Removing its
+last entry removes that panel. Removing a HACS repository alone is not the
+same as removing an HA integration entry. Review any old panel dependencies
+before uninstalling. Do not remove the native **ESPHome** entry.
 
-Offline boards retry during HA setup. A board that goes offline later remains
-in the selector and its dashboard reports Offline; readings are not invented.
-Use the panel's retry button if no configured board is available after startup.
+The custom panel, HACS metadata and installation packages are no longer
+maintained in the current repository. Removing files from GitHub does not
+uninstall an existing HA component. Back up your HA configuration before
+removing an old component, and retain the native ESPHome integration.
 
-## Security and transport
+## Validation and references
 
-Only the shared frontend's static code is publicly served by HA. It contains no
-board data, private addresses or tokens. Data/control commands use HA's existing
-authenticated WebSocket connection and enforce administrator access server-side.
-No long-lived access token is requested, stored or passed into the dashboard.
+A read-only native API test against Board 1 running firmware **0.3.7** and
+ESPHome **2026.8.2** successfully listed all eight sensors and the three
+controls. This verifies the board-side API, not setup inside a user's HA
+instance. The revised setup page has separate UI/model tests; publishing or
+previewing it does not install firmware on a board.
 
-The frame bridge validates origin, source window, entry and a per-frame session
-identifier. Switching boards drops stale replies. The backend accepts only
-configured entry IDs and a fixed allowlist of API methods, paths and parameters.
-It is not a generic URL proxy. Hostnames are resolved and validated for every
-uncached request, requests are pinned to a private IP, redirects are rejected,
-JSON responses are size-limited, and timeouts bound network operations.
-
-The LAN connection to the existing board is normally HTTP; the browser-to-HA
-connection retains whatever HTTPS/authentication HA already uses. This does not
-add authentication to the board's standalone LAN server. Keep that server and
-the native ESPHome API on a trusted LAN/VPN and never publish them directly.
-The city-search feature continues to contact Open-Meteo from the browser over
-HTTPS, as it does in the standalone dashboard.
-
-## Shared assets, packaging and validation
-
-### Local visual preview
-
-The following fixture runs the actual panel and shared frontend with simulated
-HA commands and sample boards, not a real HA installation:
-
-It deliberately uses an auto-height wrapper, with no externally forced panel
-height. This reproduces HA's percentage-height failure and prevents the fixture
-from hiding it again. The panel itself must fill the remaining viewport.
-
-```sh
-node tools/preview_dashboard.mjs 8768
-# In a second terminal:
-node tools/preview_ha_panel.mjs 8769
-```
-
-Open `http://127.0.0.1:8769/`. The room selector, history inspector and mobile
-icon-only navigation can be tested without contacting or changing a real board.
-
-![Simulated Home Assistant panel with shared dashboard](dashboard-ha-panel.jpg)
-
-Sample data only. This fixture does not reproduce HA login or its outer sidebar;
-those still require validation in a real HA installation.
-
-![The same panel with compact mobile navigation](dashboard-ha-panel-mobile.jpg)
-
-### Build the installable package
-
-The board's web files are the source of truth. Before packaging either version:
-
-```sh
-python3 tools/sync_ha_frontend.py
-python3 tools/sync_ha_frontend.py --check
-python3 tools/package_ha_integration.py
-```
-
-HA assets are included inside the integration so installation does not depend
-on an external checkout or runtime download. Packaging is deterministic, excludes
-Python caches and refuses to replace a different package under an existing
-version. Bump the HA manifest version before publishing changed package bytes.
-HA integration updates and board firmware updates are separate operations.
-
-Tests cover real HA registration/config-flow/WebSocket APIs, access restrictions,
-board identity, request allowlists, LAN resolution, redirects, payload limits,
-cache invalidation, frontend transport and shared-asset consistency. Tests use
-mocked LAN responses; installing and testing in a user's real HA instance is
-still a separate user-authorized step, not an outcome claimed by these tests.
-
-## Standalone dashboard and legacy embedding
-
-The board dashboard still discovers HA with mDNS and guides installation. Native
-ESPHome connectivity is not proof that the custom dashboard integration is
-installed. In HA panel mode the setup instructions are replaced by an installed
-panel notice; no further HTTPS setup is suggested.
-
-The older Webpage/iframe method remains optional under Advanced options.
-Unlike the integration, it still needs an HTTPS board/proxy address if HA is
-opened through HTTPS. Its YAML is only for a new dedicated dashboard, never a
-replacement for existing configuration.
-
-Official references: [custom HA panels](https://developers.home-assistant.io/docs/frontend/custom-ui/creating-custom-panels/),
-[WebSocket extensions](https://developers.home-assistant.io/docs/frontend/extending/websocket-api/),
-[configuration flows](https://developers.home-assistant.io/docs/core/integration/config_flow/),
-[HACS integration structure](https://www.hacs.dev/docs/publish/integration/) and
-[legacy iframe HTTPS restriction](https://www.home-assistant.io/dashboards/iframe/).
+Official guides: [HA ESPHome integration](https://www.home-assistant.io/integrations/esphome/),
+[ESPHome native API](https://esphome.io/components/api/).

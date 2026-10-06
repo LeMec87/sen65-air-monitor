@@ -80,32 +80,23 @@
 
           <section class="tab-panel" id="tab-ha" aria-labelledby="nav-ha">
             <div class="card ha-card">
-              <div class="card-header"><div><span class="eyebrow">Home Assistant</span><h2 class="card-title">Your dashboard.<br>Now in HA.</h2><p class="card-subtitle">The same look. The same controls.</p></div><span class="fw-badge fw-badge--unknown" id="ha-status" role="status">Searching…</span></div>
+              <div class="card-header"><div><span class="eyebrow">Home Assistant</span><h2 class="card-title">Connect with<br>ESPHome.</h2><p class="card-subtitle">Eight sensors. One local connection.</p></div><span class="fw-badge fw-badge--unknown" id="ha-status" role="status">Searching…</span></div>
               <p class="weather-message" id="ha-message" role="status">Looking for Home Assistant on this network…</p>
               <div class="ha-setup">
                 <section class="ha-step" id="ha-connect-step" aria-labelledby="ha-connect-title">
-                  <div class="ha-step-heading"><span class="ha-step-number" id="ha-connect-number" aria-hidden="true">1</span><h3 id="ha-connect-title">Install the HA integration</h3></div>
-                  <div id="ha-connect-body"><p>Install our SEN65 Air Monitor integration in Home Assistant and restart HA. You only need to do this once.</p><div class="fw-actions"><a class="fw-btn fw-btn--secondary" href="https://github.com/LeMec87/sen65-air-monitor/blob/main/docs/home-assistant.md" target="_blank" rel="noopener noreferrer">Installation guide ↗</a></div></div>
-                  <p id="ha-connected-note" hidden>ESPHome is connected for sensor entities. The dashboard integration is installed separately.</p>
-                </section>
-                <section class="ha-step" aria-labelledby="ha-dashboard-title">
-                  <div class="ha-step-heading"><span class="ha-step-number" aria-hidden="true">2</span><h3 id="ha-dashboard-title">Add your monitor</h3></div>
-                  <p>Open setup, enter this board's local address, and confirm. The exact dashboard appears automatically in the HA sidebar.</p>
-                  <div class="fw-actions"><a class="fw-btn" id="ha-integrate" href="https://my.home-assistant.io/redirect/config_flow_start/?domain=sen65_air_monitor" target="_blank" rel="noopener noreferrer">Add monitor to HA ↗</a><a class="fw-btn fw-btn--secondary" id="ha-dashboards" href="https://my.home-assistant.io/" target="_blank" rel="noopener noreferrer">Open HA panel ↗</a></div>
-                  <p class="weather-detail">Works through HA's own HTTP or HTTPS address. No separate domain, Cloudflare route or board certificate is needed. The panel is available to HA administrators.</p>
+                  <div class="ha-step-heading"><span class="ha-step-number" id="ha-connect-number" aria-hidden="true">1</span><h3 id="ha-connect-title">Add the ESPHome device</h3></div>
+                  <div id="ha-connect-body"><p>In Home Assistant, open Settings → Devices &amp; services → Add integration → ESPHome. Enter this board's host and port 6053. No HACS download or custom integration is required.</p><div class="fw-actions"><a class="fw-btn" id="ha-integrate" href="https://my.home-assistant.io/redirect/config_flow_start/?domain=esphome" target="_blank" rel="noopener noreferrer">Connect with ESPHome ↗</a></div></div>
+                  <p id="ha-connected-note" hidden>Home Assistant is connected through ESPHome. Your sensor entities are ready to use.</p>
+                  <div class="ha-address"><code id="ha-device-host">Loading…</code><button type="button" class="fw-btn fw-btn--secondary" id="ha-copy-host" disabled>Copy host</button></div><p class="weather-detail">Native API port: 6053. Use the board's address, not Home Assistant's address. Enter an encryption key only if this board has API encryption configured.</p>
                 </section>
               </div>
               <p class="weather-message" id="ha-action-status" role="status"></p>
-              <p class="ha-warning" id="ha-https-warning" hidden>Legacy Webpage embedding needs HTTPS when HA uses HTTPS. The recommended integration above does not have this restriction.</p>
               <details class="ha-advanced"><summary>Advanced options &amp; help</summary>
                 <label class="weather-label" for="ha-instance">Home Assistant instance</label><select id="ha-instance" class="weather-input" disabled><option value="">No instance found yet</option></select>
                 <div class="fw-actions"><button type="button" class="fw-btn fw-btn--secondary" id="ha-scan">Search again</button><a id="ha-open" class="fw-btn fw-btn--secondary" href="https://my.home-assistant.io/" target="_blank" rel="noopener noreferrer">Open Home Assistant ↗</a></div>
                 <form id="ha-manual-form"><label class="weather-label" for="ha-manual-url">Home Assistant address</label><div class="weather-search-row"><input id="ha-manual-url" class="weather-input" type="url" placeholder="http://homeassistant.local:8123" maxlength="230" autocomplete="off"><button class="fw-btn fw-btn--secondary" type="submit">Use address</button></div><p class="weather-detail">Use this if automatic discovery cannot find HA. Selecting an address does not connect the monitor.</p></form>
-                <h3>Connection details</h3><p class="weather-detail">If setup asks for a host, use this address and API port 6053.</p><div class="ha-address"><code id="ha-device-host">Loading…</code><button type="button" class="fw-btn fw-btn--secondary" id="ha-copy-host" disabled>Copy host</button></div>
-                <h3>Legacy Webpage option</h3><div class="ha-address"><code id="ha-device-url">Loading…</code></div><div class="fw-actions"><button type="button" class="fw-btn fw-btn--secondary" id="ha-copy-url" disabled>Copy board URL</button><button type="button" class="fw-btn fw-btn--secondary" id="ha-download" disabled>Download dashboard YAML</button></div>
-                <p class="weather-detail">Without our integration, use Add dashboard → Webpage in HA. This legacy option requires a separate HTTPS board address when HA uses HTTPS. Never expose the bare board to the internet. YAML is only for a new dashboard.</p>
-                <p class="weather-detail">ESPHome sensor pairing and installing our dashboard integration are separate. Firmware alone cannot install the HA integration or verify that it is installed.</p>
-                <p class="weather-detail">Discovery checks once a minute. A connected status means an ESPHome client identifying itself as Home Assistant is currently connected. Your browser or HA app must be able to reach the monitor locally or through a secure VPN/proxy. Do not disable browser or iframe protections.</p>
+                <p class="weather-detail">If HA cannot resolve the .local host, use the board's local IP shown on Device Information. Discovery can be blocked across VLANs; manual ESPHome setup still works when HA can reach TCP port 6053.</p>
+                <p class="weather-detail">Discovery checks once a minute. Connected means an ESPHome client identifying itself as Home Assistant is currently connected, not a dashboard installation. HA stores its own sensor history separately from the board's RAM-only charts.</p>
               </details>
             </div>
           </section>

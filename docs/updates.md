@@ -83,13 +83,12 @@ as a USB rollback option. Dashboard downgrades are intentionally blocked.
 ## Publish a release (maintainers)
 
 1. Bump `fw_version` in the YAML and update documentation/changelog.
-2. Compile with the pinned ESPHome version and run the tests.
+2. Compile with the pinned ESPHome version and run local validation checks.
 3. Package the resulting images and manifest together:
 
 ```bash
 python3 tools/prepare_release.py \
   --build-path /tmp/sen65-air-monitor-build
-python3 tests/release_manifest_test.py
 ```
 
 4. Commit the versioned OTA/factory binaries, `dist/manifest.json`,
@@ -105,29 +104,18 @@ this acknowledges acceptance, not completion. Poll `/api/state` for the result.
 Busy or disconnected checks return 409. Unsupported methods return 400 with
 `method_not_allowed` because the pinned ESP32 server supports a limited status set.
 
-## Validation of firmware v0.3.7 and HA integration v0.1.1
+## Firmware v0.3.7 and current source
 
-Firmware v0.3.7 contains the one-row icon-only mobile menu and simplified HA
-installation guide. Matching immutable images and this project's manifest are
-published together. The hardware driver/profile is unchanged by this release.
+The v0.3.7 binaries remain unchanged and include the earlier HA setup UI.
+Current source uses the built-in ESPHome connection only; dashboard embedding
+and custom HA installation packages have been removed. Build a new firmware
+version to install the revised UI; publishing source alone does not update a
+board. Native ESPHome connectivity already works with the published firmware.
 
-The separate HA v0.1.1 package reuses the dashboard through HA's authenticated
-backend. Its tests cover HA registration and configuration-flow APIs, discovery,
-reconfiguration, admin permissions, offline errors, LAN request allowlists,
-response bounds, redirects, shared assets and frame/board-switching guards.
-Browser fixtures cover room switching, History trace toggles and 320-pixel
-navigation without horizontal overflow. Screenshots are sample-data previews.
-
-Install the HA package separately using the [HA guide](home-assistant.md).
-Installing board firmware alone cannot install a custom integration in HA.
-This release is not yet validated in a real HA installation or on a physical
-board. Publication does not restart or install anything on either system.
-
-For rollback, back up your HA configuration before installation. Remove the
-SEN65 integration entries and its custom component, then restart HA; retain
-native ESPHome entries. Restore a backed-up component for an integration
-upgrade rollback. For board rollback, use an older compatible factory image
-over USB; dashboard downgrades remain blocked.
+Older custom HA installations are independent of board firmware. See the
+[migration instructions](home-assistant.md#moving-from-the-custom-integration).
+For board rollback, use an older compatible factory image over USB; dashboard
+downgrades remain blocked.
 
 ## Validation of v0.3.6
 
@@ -148,8 +136,8 @@ fails after a future installation; dashboard downgrades remain blocked.
 
 The new features have not been installed or verified on a physical board or
 real HA dashboard. Publication changes the GitHub update manifest only; it does
-not restart the board, reset history, pair HA or create a dashboard. Integration
-remains user-confirmed. HTTPS HA cannot directly embed the board's HTTP page.
+not restart the board, reset history, pair HA or create a dashboard. ESPHome pairing
+remains user-confirmed. Dashboard embedding is no longer provided.
 See [History](history.md) and [Home Assistant](home-assistant.md).
 
 ## Validation of v0.3.5
