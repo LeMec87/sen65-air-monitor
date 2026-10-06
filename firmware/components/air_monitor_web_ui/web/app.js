@@ -279,7 +279,7 @@
     let weatherSelected = null;
     let weatherPollInFlight = false;
 
-    const weatherNames = ['Sunny', 'Cloudy', 'Light rain', 'Clear night', 'Partly cloudy', 'Heavy rain', 'Thunderstorm'];
+    const weatherNames = ['Sunny', 'Cloudy', 'Light rain', 'Clear night', 'Partly cloudy', 'Heavy rain', 'Thunderstorm', 'Snow'];
     function weatherIcon(kind) {
       const cloud = '<path d="M5 16h14a4 4 0 0 0 0-8 6 6 0 0 0-11-1 4.5 4.5 0 0 0-3 9Z"/>';
       const sun = '<circle cx="12" cy="12" r="4"/><path d="M12 1v2m0 18v2M1 12h2m18 0h2M4 4l2 2m12 12 2 2M4 20l2-2M18 6l2-2"/>';
@@ -291,9 +291,10 @@
       if (kind === 4) content = '<circle cx="7" cy="6" r="3"/><path d="M7 1V0M2 6H0m2-4L1 1m10 1 1-1"/>' + cloud;
       if (kind === 5) content = cloud + '<path d="m6 18-2 4m7-4-2 4m7-4-2 4m7-4-2 4"/>';
       if (kind === 6) content = cloud + '<path d="m13 15-4 5h4l-2 4 7-6h-5l2-3"/>';
+      if (kind === 7) content = '<path d="M12 2v22M2.5 7.5l19 11m-19 0 19-11M8 4l4 4 4-4M8 22l4-4 4 4M3 11l5-1-1-5m14 10-5 1 1 5M7 21l1-5-5-1m14-10-1 5 5 1"/>';
       return '<svg viewBox="0 0 24 26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + content + '</svg>';
     }
-    document.getElementById('weather-legend').innerHTML = [0, 4, 1, 2, 5, 6, 3].map(kind =>
+    document.getElementById('weather-legend').innerHTML = [0, 4, 1, 2, 5, 6, 7, 3].map(kind =>
       '<div class="weather-legend-item">' + weatherIcon(kind) + '<span>' + weatherNames[kind] + '</span></div>'
     ).join('');
 

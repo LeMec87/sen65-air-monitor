@@ -22,7 +22,7 @@ it does not connect to the device or change its settings.
 | Climate | [climate.png](climate.png) |
 | Device information | [info.png](info.png) |
 | Device information, offline | [info-offline.png](info-offline.png) |
-| Weather symbols | [weather-icons.png](weather-icons.png) |
+| Weather symbols | [weather-icons.svg](weather-icons.svg) |
 
 The overview is a capture from a running device. The history pages use
 synthetic values to show a complete 24-hour curve. Their geometry and fonts
@@ -63,16 +63,17 @@ configured 900 ms interval; actual hardware refresh duration can vary.
 
 ![Offline device information](info-offline.png)
 
-## Weather icons (v0.3.0)
+## Weather icons (current source)
 
 The display supports sunny, partly cloudy, cloudy, light rain, heavy rain,
-thunderstorm, and a crescent moon for clear nights. This enlarged strip is
+thunderstorm, snow, and a crescent moon for clear nights. This enlarged strip is
 rendered with the actual firmware icon functions; the icons occupy an
 18×18-pixel area on the device. Rain and thunderstorm icons remain visible
-at night rather than being replaced by a moon. Fog and snow use the cloud
-fallback within this seven-icon set.
+at night rather than being replaced by a moon. Snow has its own snowflake;
+fog retains the cloud fallback. Snow is an unreleased source addition and
+requires a future firmware release or local build.
 
-![Display weather icons](weather-icons.png)
+![Display weather icons](weather-icons.svg)
 
 Choose **Weather** in the device dashboard to search for and save a city, or
 retain automatic IP-based location. See the [weather settings guide](../weather.md).

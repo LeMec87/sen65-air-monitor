@@ -17,7 +17,7 @@ The mobile menu omits visual labels but keeps accessible button names. All five
 
 ### Weather
 
-![Dark glass Weather dashboard with sample conditions](weather-dashboard.jpg)
+![Dark glass Weather dashboard with sample conditions and snow legend](weather-dashboard.png)
 
 Berlin and the weather conditions are fixture data, not the owner's location
 or live weather. See the [weather guide](weather.md) for real-device settings.

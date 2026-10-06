@@ -2,6 +2,9 @@
 
 ## Unreleased - 2026-10-06
 
+- add a snowflake weather icon to the e-paper overview and web dashboard;
+  map snowfall, snow grains and snow showers to Snow during day and night
+
 - use the built-in ESPHome integration for Home Assistant connections
 - remove HA dashboard linking, iframe YAML, custom panel, HACS metadata,
   integration ZIPs and obsolete panel previews from the current repository

@@ -27,7 +27,7 @@ not live weather or a screenshot from a flashed board. It shows the v0.3.6
 dark glass design. Berlin is a fixture city, not the owner's location.
 Device-specific connection details are not shown.
 
-![v0.3.6 dark glass Weather dashboard with sample conditions](weather-dashboard.jpg)
+![Current-source Weather dashboard with sample conditions and snow legend](weather-dashboard.png)
 
 ## Refresh and status
 
@@ -43,19 +43,24 @@ Device-specific connection details are not shown.
 
 ## Icon mapping
 
-![Enlarged original display weather icons](display/weather-icons.png)
+![Enlarged original display weather icons](display/weather-icons.svg)
 
 | Display icon | Open-Meteo WMO codes |
 | --- | --- |
 | Sun | 0, 1 during daytime |
 | Clear-night moon | 0, 1 at night |
 | Partly cloudy | 2 |
-| Cloudy | 3; fog 45, 48; snow 71, 73, 75, 77, 85, 86 as fallback |
+| Cloudy | 3; fog 45, 48 |
 | Light rain | Drizzle 51, 53, 55, 56, 57; slight/moderate rain 61, 63, 66; showers 80, 81 |
 | Heavy rain | 65, 67, 82 |
 | Thunderstorm | 95, 96, 97, 99 |
+| Snow | Snowfall 71, 73, 75; snow grains 77; snow showers 85, 86 |
 
-Cloud and rain conditions retain their corresponding icons at night; the moon
+The snowflake is included in current source for both the e-paper header and
+web dashboard, but not in the existing v0.3.7 binaries. Install a future release
+or build the updated source to use it. No additional weather API call is needed.
+
+Cloud, rain and snow conditions retain their corresponding icons at night; the moon
 is reserved for clear/mainly-clear nights. Moderate rain is grouped into the
 light-rain icon because this set has only two rain symbols. Unknown or malformed
 weather codes are rejected instead of displaying a misleading clear-sky icon.
@@ -111,6 +116,11 @@ verify these certificates. Use the dashboard only on a trusted local network;
 do not expose it directly to the internet.
 
 For v0.3.0, the firmware compilation, weather-code/coordinate/settings unit
-tests, seven-icon render/boundary checks, and browser city-search/save/restore
+tests, weather-icon render/boundary checks, and browser city-search/save/restore
 flows were verified. Browser tests used a fixture API; reboot persistence and
 live weather still require a test on a flashed physical board.
+
+The current snow addition passes day/night code-mapping checks, native icon
+rendering with an 18×18 boundary check, and compressed web-bundle checks.
+The browser preview includes eight labeled symbols without console errors.
+This does not claim a new full firmware build or a physical-board installation.

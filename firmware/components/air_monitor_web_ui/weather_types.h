@@ -9,15 +9,15 @@ namespace air_monitor::weather {
 
 enum Kind {
   UNKNOWN = -1, SUN = 0, CLOUD = 1, LIGHT_RAIN = 2, MOON = 3,
-  PARTLY_CLOUDY = 4, HEAVY_RAIN = 5, THUNDERSTORM = 6
+  PARTLY_CLOUDY = 4, HEAVY_RAIN = 5, THUNDERSTORM = 6, SNOW = 7
 };
 
 inline Kind from_wmo(int code, bool day) {
   switch (code) {
     case 0: case 1: return day ? SUN : MOON;
     case 2: return PARTLY_CLOUDY;
-    case 3: case 45: case 48:
-    case 71: case 73: case 75: case 77: case 85: case 86: return CLOUD;
+    case 3: case 45: case 48: return CLOUD;
+    case 71: case 73: case 75: case 77: case 85: case 86: return SNOW;
     case 51: case 53: case 55: case 56: case 57:
     case 61: case 63: case 66: case 80: case 81: return LIGHT_RAIN;
     case 65: case 67: case 82: return HEAVY_RAIN;
@@ -35,6 +35,7 @@ inline const char *label(int kind) {
     case PARTLY_CLOUDY: return "Partly cloudy";
     case HEAVY_RAIN: return "Heavy rain";
     case THUNDERSTORM: return "Thunderstorm";
+    case SNOW: return "Snow";
     default: return "Waiting for weather";
   }
 }

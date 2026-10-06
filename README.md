@@ -41,8 +41,9 @@ The revised ESPHome setup page is a source change, not yet a released firmware i
 - custom Space Grotesk e-paper dashboard
 - date, local time and current weather icon
 - weather location selectable in the dashboard: saved city or automatic IP-based location
-- seven weather icons: sunny, partly cloudy, cloudy, light rain, heavy rain,
-  thunderstorm and clear-night moon
+- eight weather icons in current source: sunny, partly cloudy, cloudy, light
+  rain, heavy rain, thunderstorm, snow and clear-night moon; the snow icon
+  requires a future firmware release or a local build
 - full-width 24-hour charts for particles, gases and climate; every sensor
   update contributes to a five-minute averaged history point
 - three-pixel graph lines with numeric scales, units and time-axis labels (v0.3.5+)
@@ -124,7 +125,7 @@ cloudy and rainy nights retain their weather icon. Internet access is required.
 
 These enlarged icons are rendered by the actual e-paper drawing functions:
 
-![Display weather icons](docs/display/weather-icons.png)
+![Display weather icons](docs/display/weather-icons.svg)
 
 See the [weather settings guide](docs/weather.md) for the dashboard preview,
 complete icon mapping, local API, connectivity/security and validation notes.

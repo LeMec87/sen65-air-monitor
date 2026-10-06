@@ -24,3 +24,6 @@ dist/*.map
 /tools/sync_ha_frontend.py
 /docs/dashboard-ha-panel.jpg
 /docs/dashboard-ha-panel-mobile.jpg
+/docs/dashboard-home-assistant.jpg
+/docs/weather-dashboard.jpg
+/docs/display/weather-icons.png

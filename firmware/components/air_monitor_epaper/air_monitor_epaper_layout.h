@@ -559,7 +559,8 @@ namespace air_monitor
       // --- weather icons, drawn into an 18 x 18 box with top-left (x, y) ---
       enum Weather { WEATHER_UNKNOWN = -1, WEATHER_SUN = 0, WEATHER_CLOUD = 1,
                      WEATHER_RAIN = 2, WEATHER_MOON = 3, WEATHER_PARTLY_CLOUDY = 4,
-                     WEATHER_HEAVY_RAIN = 5, WEATHER_THUNDERSTORM = 6 };
+                     WEATHER_HEAVY_RAIN = 5, WEATHER_THUNDERSTORM = 6,
+                     WEATHER_SNOW = 7 };
       static constexpr int ICON_W = 18;
 
       template <typename Display>
@@ -633,6 +634,26 @@ namespace air_monitor
             const int dx = x + (drops == 2 ? 6 + 7 * i : 3 + 4 * i);
             if (drops == 2) display.drawLine(dx, y + 13, dx - 1, y + 15, GxEPD_BLACK);
             else draw_thick_line(display, dx, y + 12, dx - 2, y + 16);
+          }
+        }
+        else if (weather == WEATHER_SNOW)
+        {
+          // Six-arm snowflake; all branches stay inside the 18 x 18 header box.
+          const int cx = x + 9, cy = y + 9;
+          for (int i = 0; i < 6; ++i)
+          {
+            const float a = i * 3.14159265f / 3.0f - 3.14159265f / 2.0f;
+            const float dx = std::cos(a), dy = std::sin(a);
+            draw_thick_line(display, cx, cy,
+                            cx + static_cast<int>(std::lround(7 * dx)),
+                            cy + static_cast<int>(std::lround(7 * dy)));
+            const int bx = cx + static_cast<int>(std::lround(4 * dx));
+            const int by = cy + static_cast<int>(std::lround(4 * dy));
+            for (int side : {-1, 1})
+              display.drawLine(bx, by,
+                               cx + static_cast<int>(std::lround(2 * dx - side * 2 * dy)),
+                               cy + static_cast<int>(std::lround(2 * dy + side * 2 * dx)),
+                               GxEPD_BLACK);
           }
         }
         else if (weather == WEATHER_THUNDERSTORM)
