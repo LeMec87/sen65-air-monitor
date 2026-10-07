@@ -73,7 +73,7 @@ recovery uses the release's `factory` image at address `0x0` (not its OTA image)
 
 ```bash
 .venv/bin/esptool --chip esp32c3 --port /dev/cu.usbmodemXXXX \
-  write-flash 0x0 dist/sen65-air-monitor-v0.3.7-factory.bin
+  write-flash 0x0 dist/sen65-air-monitor-v1.0.0-factory.bin
 ```
 
 If an erase is necessary for recovery, use the erase-flash command in the
@@ -104,13 +104,19 @@ this acknowledges acceptance, not completion. Poll `/api/state` for the result.
 Busy or disconnected checks return 409. Unsupported methods return 400 with
 `method_not_allowed` because the pinned ESP32 server supports a limited status set.
 
-## Firmware v0.3.7 and current source
+## Firmware v1.0.0
 
-The v0.3.7 binaries remain unchanged and include the earlier HA setup UI.
-Current source uses the built-in ESPHome connection only; dashboard embedding
-and custom HA installation packages have been removed. Build a new firmware
-version to install the revised UI; publishing source alone does not update a
-board. Native ESPHome connectivity already works with the published firmware.
+The approved feature-complete baseline is v1.0.0. It includes the pixel-glass
+dashboard, Sixtyfour headings, reading status bands, pixel weather icons and
+built-in ESPHome connection guidance. Dashboard embedding and custom HA
+installation packages are not provided. Existing sensor, history, weather,
+display, onboarding and update functions remain available.
+
+Matching OTA/factory images are built with ESPHome 2026.8.2. The version is
+higher than earlier 0.x firmware, allowing normal dashboard update checks to
+offer it. Installation remains manual: publishing never installs or restarts
+a board. This release has not been installed on hardware during publication.
+Previous release images remain unchanged for USB recovery.
 
 Older custom HA installations are independent of board firmware. See the
 [migration instructions](home-assistant.md#moving-from-the-custom-integration).
@@ -156,9 +162,9 @@ the normal dashboard update check. The final all-graph/axis changes have not
 yet been installed or verified on a physical panel. Publication does not
 restart a board; installation remains a separate, manual step.
 
-![v0.3.7 dark glass Updates dashboard with simulated up-to-date state](updates-dashboard.jpg)
+![v1.0.0 pixel-glass Updates dashboard with simulated up-to-date state](updates-dashboard.jpg)
 
-This is a browser preview of the current dark glass design, with simulated
+This is a browser preview of the current pixel-glass design, with simulated
 firmware versions and status. It is not a live board capture or proof that a
 board has been upgraded. Device-specific connection details are not shown.
 

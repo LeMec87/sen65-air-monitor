@@ -56,9 +56,9 @@ Device-specific connection details are not shown.
 | Thunderstorm | 95, 96, 97, 99 |
 | Snow | Snowfall 71, 73, 75; snow grains 77; snow showers 85, 86 |
 
-The snowflake is included in current source for both the e-paper header and
-web dashboard, but not in the existing v0.3.7 binaries. Install a future release
-or build the updated source to use it. No additional weather API call is needed.
+The snow icon is included in v1.0.0 for both the e-paper header and web
+dashboard. The web dashboard has its own pixel SVG icons; the physical display
+uses its existing drawing functions. No additional weather API call is needed.
 
 Cloud, rain and snow conditions retain their corresponding icons at night; the moon
 is reserved for clear/mainly-clear nights. Moderate rain is grouped into the

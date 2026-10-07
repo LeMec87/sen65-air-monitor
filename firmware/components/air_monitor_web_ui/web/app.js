@@ -85,6 +85,27 @@
       });
     });
 
+    // Instantaneous dashboard guidance, not AQI or health/exposure limits.
+    // PM1 and PM4 use explicit project heuristics; gas indices are relative.
+    const metricBands = {
+      temp: { valid: [-40, 85], good: [20, 26], moderate: [18, 28] },
+      rh: { valid: [0, 100], good: [40, 60], moderate: [30, 70] },
+      pm1: { valid: [0, Infinity], good: [0, 15], moderate: [0, 35] },
+      pm25: { valid: [0, Infinity], good: [0, 15], moderate: [0, 35] },
+      pm4: { valid: [0, Infinity], good: [0, 45], moderate: [0, 100] },
+      pm10: { valid: [0, Infinity], good: [0, 45], moderate: [0, 100] },
+      voc: { valid: [1, 500], good: [1, 150], moderate: [1, 250] },
+      nox: { valid: [1, 500], good: [1, 20], moderate: [1, 50] }
+    };
+    function metricQuality(key, value) {
+      const band = metricBands[key];
+      if (!band || typeof value !== 'number' || !Number.isFinite(value) ||
+          value < band.valid[0] || value > band.valid[1]) return 'unknown';
+      if (value >= band.good[0] && value <= band.good[1]) return 'good';
+      if (value >= band.moderate[0] && value <= band.moderate[1]) return 'moderate';
+      return 'poor';
+    }
+
     function renderMetrics(data) {
       const unit = (data.temp_unit === 'C' || data.temp_unit === 'F') ? data.temp_unit : 'C';
       applyUnitToUI(unit);
@@ -106,18 +127,23 @@
       ];
 
       let group = '';
-      metricsEl.innerHTML = items.map(m => {
+      const metricKeys = ['temp', 'rh', 'pm1', 'pm25', 'pm4', 'pm10', 'voc', 'nox'];
+      metricsEl.innerHTML = items.map((m, i) => {
+        // Always assess raw Celsius, independent of display unit.
+        const quality = metricQuality(metricKeys[i], data[metricKeys[i]]);
+        const qualityLabel = { good: 'Good', moderate: 'Moderate', poor: 'Poor', unknown: 'No valid reading' }[quality];
         const val = formatNumber(m.value, m.decimals);
         const heading = m.group && m.group !== group ? `<div class="metric-group">${m.group}</div>` : '';
         if (m.group) group = m.group;
         return `
-          ${heading}<div class="metric${m.style ? ' metric--' + m.style : ''}">
+          ${heading}<div class="metric${m.style ? ' metric--' + m.style : ''}" data-quality="${quality}">
             <div class="metric-label">${m.label}</div>
             <div class="metric-main">
               <div class="metric-value">${val}</div>
               <div class="metric-unit">${m.unit}</div>
             </div>
             ${m.caption ? '<div class="metric-caption">' + m.caption + '</div>' : ''}
+            <div class="metric-quality">${qualityLabel}</div>
           </div>
         `;
       }).join('');
@@ -280,19 +306,21 @@
     let weatherPollInFlight = false;
 
     const weatherNames = ['Sunny', 'Cloudy', 'Light rain', 'Clear night', 'Partly cloudy', 'Heavy rain', 'Thunderstorm', 'Snow'];
+    // Pixel silhouettes mirror the native 18 x 18 e-paper weather symbols.
     function weatherIcon(kind) {
-      const cloud = '<path d="M5 16h14a4 4 0 0 0 0-8 6 6 0 0 0-11-1 4.5 4.5 0 0 0-3 9Z"/>';
-      const sun = '<circle cx="12" cy="12" r="4"/><path d="M12 1v2m0 18v2M1 12h2m18 0h2M4 4l2 2m12 12 2 2M4 20l2-2M18 6l2-2"/>';
-      let content = '<path d="M9 8a3 3 0 1 1 4 3c-1 1-1 1-1 3m0 4h.01"/>';
-      if (kind === 0) content = sun;
-      if (kind === 1) content = cloud;
-      if (kind === 2) content = cloud + '<path d="m9 19-1 2m8-2-1 2"/>';
-      if (kind === 3) content = '<path d="M20 15A9 9 0 0 1 9 4a9 9 0 1 0 11 11Z"/>';
-      if (kind === 4) content = '<circle cx="7" cy="6" r="3"/><path d="M7 1V0M2 6H0m2-4L1 1m10 1 1-1"/>' + cloud;
-      if (kind === 5) content = cloud + '<path d="m6 18-2 4m7-4-2 4m7-4-2 4m7-4-2 4"/>';
-      if (kind === 6) content = cloud + '<path d="m13 15-4 5h4l-2 4 7-6h-5l2-3"/>';
-      if (kind === 7) content = '<path d="M12 2v22M2.5 7.5l19 11m-19 0 19-11M8 4l4 4 4-4M8 22l4-4 4 4M3 11l5-1-1-5m14 10-5 1 1 5M7 21l1-5-5-1m14-10-1 5 5 1"/>';
-      return '<svg viewBox="0 0 24 26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + content + '</svg>';
+      if (kind === 3) return '<svg xmlns="http://www.w3.org/2000/svg" class="pixel-icon" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h12v2H6zM4 4h2v2H4zM18 4h2v2h-2zM2 6h2v12H2zM20 6h2v12h-2zM4 18h2v2H4zM18 18h2v2h-2zM6 20h12v2H6zM8 6h3v2H8zM6 8h2v3H6zM11 8h2v3h-2zM8 11h3v2H8zM15 7h2v2h-2zM7 15h2v2H7zM14 14h3v3h-3z"/></svg>';
+      if (kind === 7) return '<svg xmlns="http://www.w3.org/2000/svg" class="pixel-icon" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 0h6v2h-6zM8 2h2v2H8zM16 2h2v2h-2zM4 4h4v2H4zM18 4h2v4h-2zM2 6h2v2H2zM8 6h2v2H8zM0 8h2v6H0zM16 8h8v2h-8zM22 10h2v4h-2zM2 14h8v2H2zM20 14h2v2h-2zM14 14h2v2h-2zM12 16h2v2h-2zM16 16h2v2h-2zM14 18h2v2h-2zM0 18h2v2H0zM6 18h2v2H6zM4 20h2v2H4zM6 22h2v2H6zM20 18h2v2h-2zM18 20h2v2h-2z"/></svg>';
+      if (kind === 2 || kind === 5 || kind === 6) {
+        const cloud = 'M22 20H2v-2h20v2ZM2 18H0v-6h2v6Zm22 0h-2v-6h2v6Zm-6-6v2h-2v-2h2ZM4 12H2v-2h2v2Zm6 0H8v-2h2v2Zm10-2h2v2h-4V8h2v2ZM8 10H4V8h4v2Zm2-2H8V6h2v2Zm8 0h-2V6h2v2Zm-2-2h-6V4h6v2Z';
+        const rain = kind === 6 ? 'M11 13h4v2h-2v2h3v2h-3v2h-2v2H9v-4h2v-2H8v-2h3z' : kind === 2 ? 'M7 17h2v3H7zM15 17h2v3h-2z' : 'M3 17h2v5H3zM8 17h2v5H8zM13 17h2v5h-2zM18 17h2v5h-2z';
+        return '<svg xmlns="http://www.w3.org/2000/svg" class="pixel-icon" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path transform="translate(0 -4)" d="' + cloud + '"/><path d="' + rain + '"/></svg>';
+      }
+      if (kind === 1) return '<svg xmlns="http://www.w3.org/2000/svg" class="pixel-icon" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M22 20H2v-2h20v2ZM2 18H0v-6h2v6Zm22 0h-2v-6h2v6Zm-6-6v2h-2v-2h2ZM4 12H2v-2h2v2Zm6 0H8v-2h2v2Zm10-2h2v2h-4V8h2v2ZM8 10H4V8h4v2Zm2-2H8V6h2v2Zm8 0h-2V6h2v2Zm-2-2h-6V4h6v2Z"/></svg>';
+      if (kind === 4) return '<svg xmlns="http://www.w3.org/2000/svg" class="pixel-icon" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 22H4v-2h10v2ZM4 20H2v-4h2v4Zm12 0h-2v-4h2v4Zm-6-2H8v-2h2v2Zm-2-2H4v-2h4v2Zm6 0h-2v-2h2v2Zm-2-2H8v-2h4v2Zm12-1h-4v-2h4v2Zm-6-1h-2v-2h2v2ZM8 10H6V8h2v2Zm8 0h-2V8h2v2Zm-2-2H8V6h6v2ZM6 6H4V4h2v2Zm14 0h-2V4h2v2ZM4 4H2V2h2v2Zm9 0h-2V0h2v4Zm9 0h-2V2h2v2Z"/></svg>';
+      if (kind === 0) return '<svg xmlns="http://www.w3.org/2000/svg" class="pixel-icon" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 22h-2v-3h2v3Zm-6-3H5v-2h2v2Zm12 0h-2v-2h2v2ZM15 9h2v6h-2v2H9v-2H7V9h2V7h6v2ZM5 13H2v-2h3v2Zm17 0h-3v-2h3v2ZM7 7H5V5h2v2Zm12 0h-2V5h2v2Zm-6-2h-2V2h2v3Z"/></svg>';
+      const paths = ["M9 0h2v1h-2zM9 1h2v1h-2zM9 2h2v1h-2zM4 3h1v1h-1zM14 3h1v1h-1zM4 4h2v1h-2zM13 4h2v1h-2zM5 5h1v1h-1zM9 5h1v1h-1zM13 5h1v1h-1zM7 6h5v1h-5zM7 7h5v1h-5zM1 8h3v1h-3zM6 8h7v1h-7zM15 8h3v1h-3zM1 9h3v1h-3zM7 9h5v1h-5zM15 9h3v1h-3zM7 10h5v1h-5zM9 11h1v1h-1zM5 12h1v1h-1zM13 12h1v1h-1zM4 13h2v1h-2zM13 13h2v1h-2zM4 14h1v1h-1zM9 14h2v1h-2zM14 14h1v1h-1zM9 15h2v1h-2zM9 16h2v1h-2z","M10 2h1v1h-1zM7 3h7v1h-7zM6 4h4v1h-4zM11 4h4v1h-4zM5 5h3v1h-3zM13 5h2v1h-2zM3 6h5v1h-5zM13 6h2v1h-2zM2 7h3v1h-3zM6 7h1v1h-1zM14 7h2v1h-2zM2 8h2v1h-2zM7 8h1v1h-1zM13 8h4v1h-4zM1 9h2v1h-2zM15 9h2v1h-2zM1 10h2v1h-2zM16 10h2v1h-2zM1 11h2v1h-2zM15 11h2v1h-2zM1 12h16v1h-16zM1 13h16v1h-16z","M10 0h1v1h-1zM7 1h7v1h-7zM6 2h4v1h-4zM11 2h4v1h-4zM5 3h3v1h-3zM13 3h2v1h-2zM3 4h5v1h-5zM13 4h2v1h-2zM2 5h3v1h-3zM6 5h1v1h-1zM14 5h2v1h-2zM2 6h2v1h-2zM7 6h1v1h-1zM13 6h4v1h-4zM1 7h2v1h-2zM15 7h2v1h-2zM1 8h2v1h-2zM16 8h2v1h-2zM1 9h2v1h-2zM15 9h2v1h-2zM1 10h16v1h-16zM1 11h16v1h-16zM6 13h1v1h-1zM13 13h1v1h-1zM5 14h1v1h-1zM12 14h1v1h-1zM5 15h1v1h-1zM12 15h1v1h-1z","M6 2h2v1h-2zM5 3h3v1h-3zM4 4h4v1h-4zM3 5h4v1h-4zM3 6h5v1h-5zM3 7h5v1h-5zM2 8h6v1h-6zM3 9h6v1h-6zM3 10h7v1h-7zM3 11h10v1h-10zM14 11h2v1h-2zM4 12h11v1h-11zM5 13h9v1h-9zM6 14h7v1h-7zM9 15h1v1h-1z","M6 0h1v1h-1zM11 0h1v1h-1zM1 1h1v1h-1zM6 1h1v1h-1zM10 1h1v1h-1zM2 2h1v1h-1zM6 2h1v1h-1zM4 3h5v1h-5zM4 4h5v1h-5zM10 4h1v1h-1zM0 5h2v1h-2zM3 5h11v1h-11zM4 6h6v1h-6zM11 6h4v1h-4zM4 7h4v1h-4zM13 7h2v1h-2zM3 8h5v1h-5zM13 8h2v1h-2zM2 9h3v1h-3zM6 9h1v1h-1zM14 9h2v1h-2zM2 10h2v1h-2zM7 10h1v1h-1zM13 10h4v1h-4zM1 11h2v1h-2zM15 11h2v1h-2zM1 12h2v1h-2zM16 12h2v1h-2zM1 13h2v1h-2zM15 13h2v1h-2zM1 14h16v1h-16zM1 15h16v1h-16z","M10 0h1v1h-1zM7 1h7v1h-7zM6 2h4v1h-4zM11 2h4v1h-4zM5 3h3v1h-3zM13 3h2v1h-2zM3 4h5v1h-5zM13 4h2v1h-2zM2 5h3v1h-3zM6 5h1v1h-1zM14 5h2v1h-2zM2 6h2v1h-2zM7 6h1v1h-1zM13 6h4v1h-4zM1 7h2v1h-2zM15 7h2v1h-2zM1 8h2v1h-2zM16 8h2v1h-2zM1 9h2v1h-2zM15 9h2v1h-2zM1 10h16v1h-16zM1 11h16v1h-16zM3 12h2v1h-2zM7 12h2v1h-2zM11 12h2v1h-2zM15 12h2v1h-2zM2 13h2v1h-2zM6 13h2v1h-2zM10 13h2v1h-2zM14 13h2v1h-2zM2 14h2v1h-2zM6 14h2v1h-2zM10 14h2v1h-2zM14 14h2v1h-2zM1 15h2v1h-2zM5 15h2v1h-2zM9 15h2v1h-2zM13 15h2v1h-2zM1 16h2v1h-2zM5 16h2v1h-2zM9 16h2v1h-2zM13 16h2v1h-2z","M10 0h1v1h-1zM7 1h7v1h-7zM6 2h4v1h-4zM11 2h4v1h-4zM5 3h3v1h-3zM13 3h2v1h-2zM3 4h5v1h-5zM13 4h2v1h-2zM2 5h3v1h-3zM6 5h1v1h-1zM14 5h2v1h-2zM2 6h2v1h-2zM7 6h1v1h-1zM13 6h4v1h-4zM1 7h2v1h-2zM15 7h2v1h-2zM1 8h2v1h-2zM16 8h2v1h-2zM1 9h2v1h-2zM10 9h1v1h-1zM15 9h2v1h-2zM1 10h16v1h-16zM1 11h16v1h-16zM8 12h6v1h-6zM7 13h5v1h-5zM6 14h6v1h-6zM8 15h2v1h-2zM8 16h1v1h-1zM7 17h1v1h-1z","M9 2h2v1h-2zM9 3h2v1h-2zM9 4h2v1h-2zM3 5h1v1h-1zM9 5h2v1h-2zM15 5h1v1h-1zM3 6h3v1h-3zM7 6h5v1h-5zM13 6h3v1h-3zM4 7h4v1h-4zM9 7h6v1h-6zM6 8h7v1h-7zM6 9h7v1h-7zM6 10h7v1h-7zM6 11h7v1h-7zM4 12h11v1h-11zM3 13h3v1h-3zM9 13h2v1h-2zM13 13h3v1h-3zM3 14h1v1h-1zM9 14h2v1h-2zM15 14h1v1h-1zM9 15h2v1h-2zM9 16h2v1h-2z"];
+      const content = paths[kind] || 'M7 3h4v2H7zM11 5h2v4h-2v2H9v2H7V9h2V7h2zM7 15h2v2H7z';
+      return '<svg class="pixel-icon" viewBox="0 0 18 18" fill="currentColor" shape-rendering="crispEdges" aria-hidden="true"><path d="' + content + '"/></svg>';
     }
     document.getElementById('weather-legend').innerHTML = [0, 4, 1, 2, 5, 6, 7, 3].map(kind =>
       '<div class="weather-legend-item">' + weatherIcon(kind) + '<span>' + weatherNames[kind] + '</span></div>'

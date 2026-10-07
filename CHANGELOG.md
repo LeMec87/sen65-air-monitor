@@ -1,6 +1,19 @@
 # Changelog
 
-## Unreleased - 2026-10-06
+## 1.0.0 - 2026-10-07
+
+- publish the approved feature-complete baseline as v1.0.0; retain previous
+  releases for recovery and preserve all existing monitor functions
+- introduce a pixel-glass web dashboard with dark blue gradients, square
+  panels, Sixtyfour headings and Space Grotesk readings
+- add consistent reading-card backgrounds and green/yellow/red status bands
+  with explicit project guidance and neutral invalid-reading states
+- add pixel weather icons for sun, partial cloud, cloud, light/heavy rain,
+  thunderstorm, snow and moon, plus the supplied larger header logo
+- improve the History inspector slider contrast
+- refresh documentation and sample-data dashboard screenshots
+- package matching OTA/factory firmware and update the manifest to v1.0.0;
+  publishing does not install the firmware on a board
 
 - add a snowflake weather icon to the e-paper overview and web dashboard;
   map snowfall, snow grains and snow showers to Snow during day and night
@@ -10,8 +23,6 @@
   integration ZIPs and obsolete panel previews from the current repository
 - keep tests and large-display experiments local and exclude them from Git
 - update connection guidance and its sample-data screenshot
-- keep v0.3.7 binaries and the OTA manifest unchanged; this is a source cleanup,
-  not a new firmware release or an installation on a board
 
 The entries below describe historical releases. Their custom HA panel is no
 longer provided by the current source tree.

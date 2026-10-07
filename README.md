@@ -29,27 +29,27 @@ new files on GitHub never installs them automatically. See the
 
 ## Features
 
-The latest published OTA/factory images are **v0.3.7**, available in `dist/`.
-Install the release on a board for the compact mobile menu. The native ESPHome
-API is already included.
+The latest published OTA/factory images are **v1.0.0**, available in `dist/`.
+This is the approved feature-complete baseline; previous releases remain
+available for recovery. The native ESPHome API is included.
 Home Assistant connects through its **built-in ESPHome integration**; no HACS
 repository or custom component is required. The native API has been checked
 on a board running v0.3.7; setup inside the user's HA instance remains separate.
-The revised ESPHome setup page is a source change, not yet a released firmware image.
+The revised ESPHome setup page is included in v1.0.0.
 
 - SEN65 readings: PM1, PM2.5, PM4, PM10, temperature, humidity, VOC and NOx
 - custom Space Grotesk e-paper dashboard
 - date, local time and current weather icon
 - weather location selectable in the dashboard: saved city or automatic IP-based location
-- eight weather icons in current source: sunny, partly cloudy, cloudy, light
-  rain, heavy rain, thunderstorm, snow and clear-night moon; the snow icon
-  requires a future firmware release or a local build
+- eight weather icons: sunny, partly cloudy, cloudy, light rain, heavy rain,
+  thunderstorm, snow and clear-night moon
 - full-width 24-hour charts for particles, gases and climate; every sensor
   update contributes to a five-minute averaged history point
 - three-pixel graph lines with numeric scales, units and time-axis labels (v0.3.5+)
 - low-flicker e-paper animation while the sensor starts
 - local web dashboard and `/api/state`
-- dark glass web interface with grouped readings and responsive navigation (v0.3.3+)
+- pixel-glass web interface with Sixtyfour headings, grouped readings and responsive navigation
+- green/yellow/red reading status bands with documented guidance and invalid-reading states
 - small e-paper overview indicator for an available newer firmware release (v0.3.3+)
 - checksum-checked GitHub updates with HTTPS certificate verification (v0.3.1+)
 - exact display capture at `/screen.pbm`
@@ -62,21 +62,24 @@ The revised ESPHome setup page is a source change, not yet a released firmware i
 
 ## Web dashboard
 
-From **v0.3.3**, the local dashboard uses a dark glass design with blue, green,
-amber, orange and red accents. Environment shows all eight readings grouped
+In **v1.0.0**, the local dashboard uses a pixel-glass design with a dark blue
+gradient, square translucent panels and pixel icons. Environment shows all eight readings grouped
 into climate, particles and gas indices; Weather manages the outdoor location;
 Updates checks and installs firmware from this repository.
 
-![Dark glass dashboard with sample readings](docs/dashboard-overview.jpg)
+![Pixel-glass dashboard with sample readings](docs/dashboard-overview.jpg)
 
 This is a browser preview with sample data, not a capture from an installed
-board. Card colors distinguish metric groups, not air-quality classifications.
-Space Grotesk falls back to a system font without internet access.
+board. Card status bands indicate Good, Moderate or Poor using project-defined
+guidance, not an official AQI or a medical assessment. Missing or invalid values
+use a neutral band. Temperature classification uses Celsius even when values
+are shown in Fahrenheit. Expand **About the status colors** for thresholds.
+Sixtyfour headings and Space Grotesk readings use fallback fonts without internet access.
 See the [dashboard design and validation notes](docs/dashboard-design.md).
 
 From **v0.3.6**, the dashboard also includes **History** and **Home Assistant**.
 History uses the board's existing five-minute RAM samples, with legend toggles
-and click/slider inspection. The current source guides HA setup through the
+and click/slider inspection. The dashboard guides HA setup through the
 built-in ESPHome integration instead of a custom repository. Mobile navigation uses five
 aligned icons with accessible names; desktop navigation retains text labels.
 See [interactive history](docs/history.md) and [Home Assistant setup](docs/home-assistant.md).
@@ -243,3 +246,5 @@ licensed under CC BY-NC-SA 4.0; commercial use is not granted. See [LICENSE](LIC
 
 Space Grotesk is licensed separately under the SIL Open Font License; see
 `assets/fonts/OFL-Space-Grotesk.txt`.
+The web dashboard also uses Sixtyfour under the
+[SIL Open Font License](https://github.com/google/fonts/blob/main/ofl/sixtyfour/OFL.txt).

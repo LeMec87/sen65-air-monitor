@@ -2,9 +2,9 @@
 (function () {
   'use strict';
   const groups = {
-    particles: [{key:'pm1',label:'PM1',color:'#92caff',dash:''},{key:'pm25',label:'PM2.5',color:'#51b666',dash:'9 5'},{key:'pm4',label:'PM4',color:'#f28f16',dash:'2 5'},{key:'pm10',label:'PM10',color:'#f26513',dash:'9 4 2 4'}],
-    gases: [{key:'voc',label:'VOC',color:'#92caff',dash:''},{key:'nox',label:'NOx',color:'#f26513',dash:'9 5'}],
-    climate: [{key:'temp',label:'Temperature',color:'#92caff',dash:''},{key:'rh',label:'Humidity',color:'#51b666',dash:'9 5'}]
+    particles: [{key:'pm1',label:'PM1',color:'#B7C7D9',dash:''},{key:'pm25',label:'PM2.5',color:'#78BF7A',dash:'9 5'},{key:'pm4',label:'PM4',color:'#DCC152',dash:'2 5'},{key:'pm10',label:'PM10',color:'#F07870',dash:'9 4 2 4'}],
+    gases: [{key:'voc',label:'VOC',color:'#B7C7D9',dash:''},{key:'nox',label:'NOx',color:'#F07870',dash:'9 5'}],
+    climate: [{key:'temp',label:'Temperature',color:'#B7C7D9',dash:''},{key:'rh',label:'Humidity',color:'#78BF7A',dash:'9 5'}]
   };
   function decode(payload, group) {
     const fields = groups[group];

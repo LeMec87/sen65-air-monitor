@@ -9,7 +9,7 @@ let unit='C',haState='detected',historyState='full';
 const uptime=90000000;
 const fields={particles:['pm1','pm25','pm4','pm10'],gases:['voc','nox'],climate:['temp','rh']};
 const state=()=>({temp:23.4,rh:48.2,pm1:3.2,pm25:4.8,pm4:5.1,pm10:6.4,voc:92,nox:1,temp_unit:unit,
-  fw_version:'0.3.7',latest_version:'0.3.7',update_configured:true,update_checking:false,update_error:'',has_update:false,update_state:'no_update',update_progress:0});
+  fw_version:'1.0.0',latest_version:'1.0.0',update_configured:true,update_checking:false,update_error:'',has_update:false,update_state:'no_update',update_progress:0});
 function history(group) {
   const metrics=fields[group];if(!metrics)return null;
   const count=historyState==='empty'?0:historyState==='one'?1:288;
