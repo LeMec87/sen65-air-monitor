@@ -43,7 +43,7 @@ Device-specific connection details are not shown.
 
 ## Icon mapping
 
-![Enlarged original display weather icons](display/weather-icons.svg)
+![Enlarged native pixel display weather icons](display/weather-pixel-icons.png)
 
 | Display icon | Open-Meteo WMO codes |
 | --- | --- |
@@ -56,9 +56,11 @@ Device-specific connection details are not shown.
 | Thunderstorm | 95, 96, 97, 99 |
 | Snow | Snowfall 71, 73, 75; snow grains 77; snow showers 85, 86 |
 
-The snow icon is included in v1.0.0 for both the e-paper header and web
-dashboard. The web dashboard has its own pixel SVG icons; the physical display
-uses its existing drawing functions. No additional weather API call is needed.
+From v1.0.1, the e-paper header uses all eight approved web pixel icon shapes
+as 24 x 24 one-bit bitmaps, including cloud with snow and the cratered moon.
+The weather mapping is unchanged and no additional API call is needed.
+Space Grotesk remains the physical display font. See the
+[native icon gallery](display/weather-pixel-icons.md).
 
 Cloud, rain and snow conditions retain their corresponding icons at night; the moon
 is reserved for clear/mainly-clear nights. Moderate rain is grouped into the

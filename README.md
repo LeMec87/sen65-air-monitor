@@ -29,7 +29,7 @@ new files on GitHub never installs them automatically. See the
 
 ## Features
 
-The latest published OTA/factory images are **v1.0.0**, available in `dist/`.
+The latest published OTA/factory images are **v1.0.1**, available in `dist/`.
 This is the approved feature-complete baseline; previous releases remain
 available for recovery. The native ESPHome API is included.
 Home Assistant connects through its **built-in ESPHome integration**; no HACS
@@ -128,7 +128,10 @@ cloudy and rainy nights retain their weather icon. Internet access is required.
 
 These enlarged icons are rendered by the actual e-paper drawing functions:
 
-![Display weather icons](docs/display/weather-icons.svg)
+![Display pixel weather icons](docs/display/weather-pixel-icons.png)
+
+From v1.0.1, the physical display uses the same pixel icon shapes as the web
+dashboard. The display keeps Space Grotesk; Sixtyfour remains web-only.
 
 See the [weather settings guide](docs/weather.md) for the dashboard preview,
 complete icon mapping, local API, connectivity/security and validation notes.

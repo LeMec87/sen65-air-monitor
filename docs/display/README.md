@@ -22,7 +22,7 @@ it does not connect to the device or change its settings.
 | Climate | [climate.png](climate.png) |
 | Device information | [info.png](info.png) |
 | Device information, offline | [info-offline.png](info-offline.png) |
-| Weather symbols | [weather-icons.svg](weather-icons.svg) |
+| Weather symbols | [weather-pixel-icons.png](weather-pixel-icons.png) |
 
 The overview is a capture from a running device. The history pages use
 synthetic values to show a complete 24-hour curve. Their geometry and fonts
@@ -73,7 +73,10 @@ at night rather than being replaced by a moon. Snow has its own snowflake;
 fog retains the cloud fallback. Snow is an unreleased source addition and
 requires a future firmware release or local build.
 
-![Display weather icons](weather-icons.svg)
+![Display pixel weather icons](weather-pixel-icons.png)
+
+The v1.0.1 e-paper icons match the approved web SVG shapes. The display font
+remains Space Grotesk. See [icon generation and validation](weather-pixel-icons.md).
 
 Choose **Weather** in the device dashboard to search for and save a city, or
 retain automatic IP-based location. See the [weather settings guide](../weather.md).

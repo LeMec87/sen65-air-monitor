@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.0.1 - 2026-10-07
+
+- transfer all eight approved pixel weather icons to the e-paper overview
+- render the same SVG shapes as native 24 x 24 one-bit bitmaps; preserve the
+  weather mapping and reserve the full icon width in the header
+- retain Space Grotesk on the physical display; no Sixtyfour font change
+- refresh the e-paper weather icon gallery and documentation
+- publish matching OTA/factory images and checksums; previous images remain
+  unchanged and publication does not install firmware on a board
+
 ## 1.0.0 - 2026-10-07
 
 - publish the approved feature-complete baseline as v1.0.0; retain previous

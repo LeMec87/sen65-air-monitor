@@ -73,7 +73,7 @@ recovery uses the release's `factory` image at address `0x0` (not its OTA image)
 
 ```bash
 .venv/bin/esptool --chip esp32c3 --port /dev/cu.usbmodemXXXX \
-  write-flash 0x0 dist/sen65-air-monitor-v1.0.0-factory.bin
+  write-flash 0x0 dist/sen65-air-monitor-v1.0.1-factory.bin
 ```
 
 If an erase is necessary for recovery, use the erase-flash command in the
@@ -104,7 +104,15 @@ this acknowledges acceptance, not completion. Poll `/api/state` for the result.
 Busy or disconnected checks return 409. Unsupported methods return 400 with
 `method_not_allowed` because the pinned ESP32 server supports a limited status set.
 
-## Firmware v1.0.0
+## Firmware v1.0.1
+
+The latest release transfers the approved web pixel weather icons to the
+physical display, while retaining Space Grotesk. It preserves all v1.0.0
+functions. Use the dashboard update check to install it manually. The icon
+rendering is tested with the native GFX path and the firmware is compiled;
+hardware installation is not part of publication.
+
+## Firmware v1.0.0 baseline
 
 The approved feature-complete baseline is v1.0.0. It includes the pixel-glass
 dashboard, Sixtyfour headings, reading status bands, pixel weather icons and

@@ -4,6 +4,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstring>
+#include "weather_pixel_bitmaps.h"
 
 extern const GFXfont Inter_Bold9pt7b;
 extern const GFXfont Inter_Bold12pt7b;
@@ -556,113 +557,18 @@ namespace air_monitor
 
       inline int level_of(float pos) { return std::min(2, static_cast<int>(pos)); }
 
-      // --- weather icons, drawn into an 18 x 18 box with top-left (x, y) ---
+      // Approved web icons, rendered at their native 24 x 24 pixel resolution.
       enum Weather { WEATHER_UNKNOWN = -1, WEATHER_SUN = 0, WEATHER_CLOUD = 1,
                      WEATHER_RAIN = 2, WEATHER_MOON = 3, WEATHER_PARTLY_CLOUDY = 4,
                      WEATHER_HEAVY_RAIN = 5, WEATHER_THUNDERSTORM = 6,
                      WEATHER_SNOW = 7 };
-      static constexpr int ICON_W = 18;
-
-      template <typename Display>
-      inline void draw_cloud(Display &display, int x, int y)
-      {
-        // black silhouette, then the same shape inset by 2 px in white -> 2 px outline
-        for (int g = 0; g <= 2; g += 2)
-        {
-          const uint16_t c = g == 0 ? GxEPD_BLACK : GxEPD_WHITE;
-          display.fillCircle(x + 5, y + 7, 4 - g, c);
-          display.fillCircle(x + 10, y + 5, 5 - g, c);
-          display.fillCircle(x + 14, y + 8, 3 - g, c);
-          display.fillRect(x + 1 + g, y + 7, 16 - 2 * g, 5 - g, c);
-        }
-      }
-
-      // 2 px wide line (matches the stroke weight of the header digits)
-      template <typename Display>
-      inline void draw_thick_line(Display &display, int x0, int y0, int x1, int y1)
-      {
-        const bool steep = std::abs(y1 - y0) > std::abs(x1 - x0);
-        display.drawLine(x0, y0, x1, y1, GxEPD_BLACK);
-        if (steep) display.drawLine(x0 + 1, y0, x1 + 1, y1, GxEPD_BLACK);
-        else display.drawLine(x0, y0 + 1, x1, y1 + 1, GxEPD_BLACK);
-      }
+      static constexpr int ICON_W = 24;
 
       template <typename Display>
       inline void draw_weather_icon(Display &display, int x, int y, int weather)
       {
-        if (weather == WEATHER_SUN)
-        {
-          const int cx = x + 9, cy = y + 8;
-          display.fillCircle(cx, cy, 3, GxEPD_BLACK);
-          for (int i = 0; i < 8; ++i)
-          {
-            const float a = i * 3.14159265f / 4.0f;
-            const float r0 = 6.0f, r1 = (i % 2) ? 7.0f : 8.0f;
-            draw_thick_line(display, static_cast<int>(std::lround(cx + r0 * std::cos(a))),
-                            static_cast<int>(std::lround(cy + r0 * std::sin(a))),
-                            static_cast<int>(std::lround(cx + r1 * std::cos(a))),
-                            static_cast<int>(std::lround(cy + r1 * std::sin(a))));
-          }
-        }
-        else if (weather == WEATHER_MOON)
-        {
-          // crescent: full disc minus an offset disc
-          const int cx = x + 9, cy = y + 8;
-          display.fillCircle(cx, cy, 7, GxEPD_BLACK);
-          display.fillCircle(cx + 4, cy - 3, 6, GxEPD_WHITE);
-        }
-        else if (weather == WEATHER_CLOUD)
-        {
-          draw_cloud(display, x, y + 2);
-        }
-        else if (weather == WEATHER_PARTLY_CLOUDY)
-        {
-          // Sun peeking above the cloud, with a clean white separation.
-          display.fillCircle(x + 6, y + 5, 3, GxEPD_BLACK);
-          display.drawLine(x + 6, y, x + 6, y + 1, GxEPD_BLACK);
-          display.drawLine(x + 1, y + 1, x + 2, y + 2, GxEPD_BLACK);
-          display.drawLine(x, y + 5, x + 1, y + 5, GxEPD_BLACK);
-          display.drawLine(x + 10, y + 1, x + 11, y, GxEPD_BLACK);
-          display.fillRect(x + 1, y + 8, 16, 8, GxEPD_WHITE);
-          draw_cloud(display, x, y + 4);
-        }
-        else if (weather == WEATHER_RAIN || weather == WEATHER_HEAVY_RAIN)
-        {
-          draw_cloud(display, x, y);
-          const int drops = weather == WEATHER_HEAVY_RAIN ? 4 : 2;
-          for (int i = 0; i < drops; ++i) {
-            const int dx = x + (drops == 2 ? 6 + 7 * i : 3 + 4 * i);
-            if (drops == 2) display.drawLine(dx, y + 13, dx - 1, y + 15, GxEPD_BLACK);
-            else draw_thick_line(display, dx, y + 12, dx - 2, y + 16);
-          }
-        }
-        else if (weather == WEATHER_SNOW)
-        {
-          // Six-arm snowflake; all branches stay inside the 18 x 18 header box.
-          const int cx = x + 9, cy = y + 9;
-          for (int i = 0; i < 6; ++i)
-          {
-            const float a = i * 3.14159265f / 3.0f - 3.14159265f / 2.0f;
-            const float dx = std::cos(a), dy = std::sin(a);
-            draw_thick_line(display, cx, cy,
-                            cx + static_cast<int>(std::lround(7 * dx)),
-                            cy + static_cast<int>(std::lround(7 * dy)));
-            const int bx = cx + static_cast<int>(std::lround(4 * dx));
-            const int by = cy + static_cast<int>(std::lround(4 * dy));
-            for (int side : {-1, 1})
-              display.drawLine(bx, by,
-                               cx + static_cast<int>(std::lround(2 * dx - side * 2 * dy)),
-                               cy + static_cast<int>(std::lround(2 * dy + side * 2 * dx)),
-                               GxEPD_BLACK);
-          }
-        }
-        else if (weather == WEATHER_THUNDERSTORM)
-        {
-          draw_cloud(display, x, y);
-          // Solid zigzag bolt, kept within the existing header icon box.
-          display.fillTriangle(x + 10, y + 9, x + 6, y + 14, x + 11, y + 14, GxEPD_BLACK);
-          display.fillTriangle(x + 8, y + 12, x + 13, y + 12, x + 7, y + 17, GxEPD_BLACK);
-        }
+        if (weather < WEATHER_SUN || weather > WEATHER_SNOW) return;
+        display.drawBitmap(x, y, kWeatherPixelBitmaps[weather], ICON_W, ICON_W, GxEPD_BLACK);
       }
     } // namespace status_layout
 
@@ -728,7 +634,7 @@ namespace air_monitor
         {
           const int sep_x = static_cast<int>(std::lround(x_rh + wr + gap));
           display.drawLine(sep_x, 15, sep_x, 28, GxEPD_BLACK);
-          draw_weather_icon(display, static_cast<int>(std::lround(x_rh + wr + sep)), 12, weather);
+          draw_weather_icon(display, static_cast<int>(std::lround(x_rh + wr + sep)), 8, weather);
         }
       }
 
